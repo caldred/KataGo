@@ -1,0 +1,201 @@
+{
+  "n_sets": 278,
+  "n_sets_held": 55,
+  "n_games": 109,
+  "n_children": 1519,
+  "sigma_ratio_train": 1.3030176726581844,
+  "sigma_ratio_held": 1.2656195990324282,
+  "sigma_ratio_by_phase": {
+    "0": 1.2196691639787307,
+    "1": 1.3136096752511006,
+    "2": 1.2720783452164368
+  },
+  "sigma_ratio_by_decile": [
+    1.592,
+    1.371,
+    1.159,
+    1.253,
+    1.311,
+    1.313,
+    1.257,
+    1.121,
+    1.31,
+    1.368
+  ],
+  "sigma_corr_coef": {
+    "a": -0.958352487216926,
+    "b": 0.9826433167198783
+  },
+  "sigma_ratio_held_corrected": 1.0467796637863405,
+  "rho_all": 0.262816759301099,
+  "rho_by_phase": {
+    "0": 0.08285669037939158,
+    "1": 0.2848155367410611,
+    "2": 0.24669040905186362
+  },
+  "rho_ci95": [
+    0.18358824882646427,
+    0.3343672386765236
+  ],
+  "rho_ci_halfwidth": 0.07538949492502968,
+  "d_mean_slope_train": 0.06384061416721812,
+  "d_mean_slope_by_phase": {
+    "0": 0.04413824745331144,
+    "1": 0.06775605183278699,
+    "2": 0.0747937816677309
+  },
+  "d_mean_heldout_R2": 0.26027001762142354,
+  "d_mean_beats_zero_frac": 1.0,
+  "sigma_d_models": {
+    "const": {
+      "beta": [
+        -4.5129
+      ],
+      "s2_res": 4.969,
+      "heldout_logR2": 0.0,
+      "heldout_calib": 0.219,
+      "heldout_log_resid_sd": 2.698
+    },
+    "log_st2": {
+      "beta": [
+        -0.7135,
+        0.8416
+      ],
+      "s2_res": 4.3677,
+      "heldout_logR2": 0.0477,
+      "heldout_calib": 0.298,
+      "heldout_log_resid_sd": 2.648
+    },
+    "entropy": {
+      "beta": [
+        -4.9031,
+        0.3502
+      ],
+      "s2_res": 4.9513,
+      "heldout_logR2": 0.0328,
+      "heldout_calib": 0.219,
+      "heldout_log_resid_sd": 2.656
+    },
+    "topk_mass": {
+      "beta": [
+        -37.4149,
+        33.489
+      ],
+      "s2_res": 4.6687,
+      "heldout_logR2": -0.0052,
+      "heldout_calib": 0.269,
+      "heldout_log_resid_sd": 2.699
+    },
+    "log_nlegal": {
+      "beta": [
+        -11.3266,
+        1.6395
+      ],
+      "s2_res": 4.9316,
+      "heldout_logR2": 0.0546,
+      "heldout_calib": 0.235,
+      "heldout_log_resid_sd": 2.625
+    },
+    "move_num": {
+      "beta": [
+        -4.186,
+        -0.0182
+      ],
+      "s2_res": 4.9505,
+      "heldout_logR2": 0.0344,
+      "heldout_calib": 0.23,
+      "heldout_log_resid_sd": 2.653
+    },
+    "log_st2+entropy+topk_mass+log_nlegal+move_num": {
+      "beta": [
+        -102.4341,
+        1.0706,
+        0.011,
+        17.5309,
+        19.606,
+        0.2249
+      ],
+      "s2_res": 3.8265,
+      "heldout_logR2": 0.2447,
+      "heldout_calib": 0.413,
+      "heldout_log_resid_sd": 2.361
+    }
+  },
+  "sigma_d_full_beats_const_frac": 0.9385,
+  "sigma_d_resid_models": {
+    "const": {
+      "beta": [
+        -4.2554
+      ],
+      "s2_res": 1.2665,
+      "heldout_logR2": 0.0,
+      "heldout_calib": 0.779,
+      "heldout_log_resid_sd": 1.107
+    },
+    "log_st2": {
+      "beta": [
+        -1.9881,
+        0.5022
+      ],
+      "s2_res": 1.0523,
+      "heldout_logR2": 0.0808,
+      "heldout_calib": 0.859,
+      "heldout_log_resid_sd": 1.066
+    },
+    "entropy": {
+      "beta": [
+        -4.8083,
+        0.4962
+      ],
+      "s2_res": 1.2309,
+      "heldout_logR2": 0.0484,
+      "heldout_calib": 0.781,
+      "heldout_log_resid_sd": 1.083
+    },
+    "topk_mass": {
+      "beta": [
+        -6.8935,
+        2.6851
+      ],
+      "s2_res": 1.2645,
+      "heldout_logR2": -0.0052,
+      "heldout_calib": 0.781,
+      "heldout_log_resid_sd": 1.109
+    },
+    "log_nlegal": {
+      "beta": [
+        6.9045,
+        -2.6852
+      ],
+      "s2_res": 1.1661,
+      "heldout_logR2": 0.0552,
+      "heldout_calib": 0.763,
+      "heldout_log_resid_sd": 1.07
+    },
+    "move_num": {
+      "beta": [
+        -5.0747,
+        0.0457
+      ],
+      "s2_res": 1.1507,
+      "heldout_logR2": 0.0724,
+      "heldout_calib": 0.756,
+      "heldout_log_resid_sd": 1.059
+    },
+    "log_st2+entropy+topk_mass+log_nlegal+move_num": {
+      "beta": [
+        -35.5232,
+        0.3825,
+        0.2197,
+        -0.906,
+        7.4974,
+        0.1382
+      ],
+      "s2_res": 1.018,
+      "heldout_logR2": 0.1432,
+      "heldout_calib": 0.823,
+      "heldout_log_resid_sd": 1.027
+    }
+  },
+  "sigma_d_resid_full_beats_const_frac": 0.897
+}

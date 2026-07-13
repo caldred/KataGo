@@ -151,3 +151,62 @@ evals/s, batch size 1 — Eigen parallelism is across threads only).
   (~2,900 deep queries ~= 1.4M visits ~= 3-4.5h wall with cache overlap).
   Held-out floor check: 0.2 x 280+ >= 56 > 50. Extension if needed = more
   games (never re-splitting), per the sanity floor above.
+
+## FINDINGS (2026-07-13, append-only; full report docs/bayes-m1-fit-report.json)
+
+Run: 278 sibling sets (310 sampled, 32 symHash-dedup/skip), 109 games,
+1,519 children, held-out 55 sets (floor 50: OK). Actual wall ~7h
+(eval-bound at ~67 NN evals/s; the 3-4.5h estimate assumed more cache
+help than materialized).
+
+**sigma — PASS with correction.** rawStWrError UNDERSTATES realized
+error: raw held-out ratio 1.266 (train 1.303; phases 1.22/1.31/1.27,
+inside the [0.75,1.35] per-phase band; deciles 1.12-1.59, worst at the
+smallest reported errors). The registered log-space correction fits
+a=-0.9584, b=0.9826 — slope ~= 1, i.e. an almost purely multiplicative
+~1.2x miscalibration — and the corrected held-out ratio is **1.047**,
+inside [0.9,1.1]. Engine form (log sigma = A + B log stErr, chi^2_1
+offset folded in): **A = 0.1560, B = 0.9826**.
+
+**rho — measurement PASSES stability; neither decision branch fires.**
+Pooled rho-hat = **0.263**, cluster-bootstrap 95% CI [0.184, 0.334]
+(half-width 0.075 <= 0.10). Above 0.10, below 0.30: sibling eval-error
+correlation on 9x9 is real but moderate — the two-component machinery
+is justified, with expected benefits closer to the testbed's rho=0.3
+cells than its rho=0.6/0.9 stress rows. Phase structure: opening 0.08,
+mid 0.28, late 0.25 (regional bias appears once fighting starts).
+Reminder (registered): labels are 500-visit values, so this is the
+RESOLVABLE shared fraction — a lower bound on total shared bias.
+
+**d-mean head (Amendment A) — PASS, strongly.** Pooled mover-persp
+slope +0.0638 on centered log prior (phases +0.044/+0.068/+0.075, all
+positive); held-out within-set R^2 = 0.260; beats-zero in 100% of 2,000
+paired bootstrap resamples (band: >= 95%). The head the seq-reveal
+testbed gate made REQUIRED is comfortably fittable from this data.
+
+**sigma_d, raw spread (item 3) — FAIL.** Every candidate incl.
+constant-only lands at held-out calibration 0.22-0.41, far below the
+[0.7,1.4] band; full-model beats-const bootstrap 0.938 also misses 0.95.
+Attribution (checked directly): raw within-set log spread^2 is NOT
+lognormal — sd 2.34 with skew -1.67, a long left tail of "all top-k
+moves equivalent" sets down to spread^2 ~ e^-14 — so the lognormal mean
+correction (exp(s2/2) ~= 12x at s2=4.97) systematically overpredicts.
+The raw spread is dominated by prior STRUCTURE, not symmetric d_a
+scatter: the same v7 lesson in a new coat — the model family must be
+well-specified for the variable, and on real 9x9 data the prior-free
+spread isn't the lognormal object the testbed's was.
+
+**sigma_d on d-mean residuals (item 5) — PASS.** Removing the
+prior-explained mean drops held-out log-residual sd from ~2.7 to ~1.06
+(near-Gaussian) and calibration lands in-band: const-only 0.779,
+parent-stErr feature 0.859 (selected on calibration per the registered
+rule; its incremental value over const is NOT bootstrap-significant —
+full model 0.897 < 0.95 — so const-only is the honest fallback). Engine
+form: **log sigma_d^2 = -1.9881 + 0.5022 log stErr_parent^2** (+0.526
+lognormal correction), or const **log sigma_d^2 = -4.2554** (+0.633).
+
+**Consequence for M2 (matches the testbed verdict independently):** the
+engine must consume d-mean + residual-sigma_d together; the prior-free
+sigma_d path is NOT calibrated on 9x9 and must not ship as the default.
+A bayesDMean param (slope on centered log prior) joins the param set at
+M2 integration. rho: set bayesRho = 0.26 on 9x9.
