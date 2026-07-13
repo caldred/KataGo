@@ -102,6 +102,41 @@ Held-out split: by game id, 80/20. All spread/variance fits in LOG space
 - Sanity floor for all three: n_sets(held-out) >= 50, else extend the run
   before reading results (extension is more games, never re-splitting).
 
+## Amendment A (2026-07-12, pre-registered BEFORE any fitting; extraction
+## was ~50/310 sets in, no fit had been run on any real-data record)
+
+The bmcts sequential-reveal gate (bmcts docs/seqreveal-m2-gate.md, run
+today) FAILED in its prior-free form and promoted the policy-prior
+d-mean offset head from optional to REQUIRED for the port: under
+policy-ordered reveal, evaluated children are a biased-high subsample
+and prior-free unevaluated-sibling posteriors drifted to z-mean +1.9.
+The M1 dataset already records (prior, deep value) per child, so the
+head is fitted from the same extraction run. Registered now, before
+results:
+
+4. **d-mean head**: within-set regression of centered deep values on
+   centered log-priors, in MOVER perspective (white-perspective values
+   sign-flipped for Black-to-move sets so "higher prior -> higher
+   value" is the expected direction):
+     y_a = deep_a_mover - mean_set(deep_mover)
+     x_a = log prior_a - mean_set(log prior)
+     y_a ~ c * x_a  (per phase; pooled slope sample-size weighted)
+   Only within-set contrasts are identified (C is unobserved); the
+   anchor-offset consequence (E[max d_a] with per-child means replacing
+   c_k*sigma_d) is an M2-integration concern, recorded there.
+5. **sigma_d residual variant**: the sigma_d fit of item 3 re-run on
+   within-set variance of the d-mean residuals (y_a - c*x_a). Both
+   variants reported; which one the engine consumes is decided at M2
+   integration on the testbed's terms, not on these numbers.
+
+Bands (pre-registered): d-mean held-out within-set R^2 > 0 by paired
+bootstrap (>= 95% of resamples), pooled slope POSITIVE in mover
+perspective (a negative or ~0 slope means the policy prior carries no
+mean signal on 9x9 and the requirement escalates back to the testbed —
+the port cannot satisfy the seq-reveal precondition prior-free).
+sigma_d-residual variant: same calibration band as item 3 ([0.7, 1.4]
+held-out ratio).
+
 ## Sample sizes (filled from benchmark before the run; frozen at run start)
 
 Benchmark (Eigen, b18c384nbt, 9x9): ~22 visits/s single search, ~88

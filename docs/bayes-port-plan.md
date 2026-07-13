@@ -85,12 +85,30 @@ results.
   exhaustive small-board minimax agreement; and a calibration probe:
   claimed root posterior vs deep-search reference values over a position
   suite (z bands, the bmcts gate).
+  **Preconditions from the seq-reveal testbed gate (bmcts
+  docs/seqreveal-m2-gate.md, FAILED-and-attributed 2026-07-12; details in
+  docs/bayes-m2-design-notes.md)**: sequential reveal must use the P-var
+  projection (never BLUP); the policy-prior d-mean offset head is
+  REQUIRED (fit added to the M1 gate as Amendment A); the dropped
+  Cov(alpha, d_a) anchor echo is conservative-only but up to 2x at low
+  |E| — un-dropping it (Stein anchor) is a new mechanism change needing
+  its own testbed gate before porting; calibration probes compare in
+  EVAL currency, not expansion currency (the ±0.15 z band at 30 evals is
+  mis-scaled even for the all-at-once stack).
 - **M3 — VOI descent**: fork the argmax in `selectBestChildToDescend`;
   single-thread first. Gate: decision calibration (claimed P(best) vs
   empirical vs the deep-search reference) + fixed-visits match vs PUCT
   KataGo at low visits (32/64/128 — where the testbed says the edge
   lives), pre-registered: no significant Elo loss at any tested visit
   count; report where it wins.
+  **Precondition (same testbed gate)**: the contested x resolvable
+  routing statistic does NOT survive partial reveal as-is (voi-seq
+  regret was worse than uniform-seq at eval budgets while ts-seq was
+  healthy) — re-derive and gate it in the testbed before forking the
+  argmax here. Also carried forward: adaptive descent adds a measured
+  ~+0.1..+0.19 seq-specific root optimism (optional stopping within
+  sets) — the selection-aware-accounting roadmap item now has a
+  concrete M2 form.
 - **M4 — regional-bias inference**: the v6 Kalman step at sibling-set
   granularity; ablate against `subtreeValueBias` (off/on/both). Gate:
   calibration unchanged + match.

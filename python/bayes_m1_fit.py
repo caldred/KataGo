@@ -65,12 +65,17 @@ def build(sets_):
         r = np.array([c["raw"] - c["deep"] for c in rec["children"]])
         st = np.array([max(c["st_err"], 1e-6) for c in rec["children"]])
         deeps = np.array([c["deep"] for c in rec["children"]])
+        priors = np.array([max(c["prior"], 1e-6) for c in rec["children"]])
+        mover = 1.0 if rec.get("pla") == "W" else -1.0
+        y = mover * (deeps - deeps.mean())          # centered, mover persp
+        x = np.log(priors) - np.log(priors).mean()  # centered log prior
         rows.append({
             "game": rec["game_id"],
             "phase": phase_of(rec["move_num"]),
             "held": rec["game_id"] % 5 == 4,
             "r": r, "st": st,
             "spread2": float(np.var(deeps, ddof=1)),
+            "dm_y": y, "dm_x": x,
             "feat": features(rec),
             "k": len(r),
         })
@@ -157,6 +162,41 @@ def rho_report(rows, out, n_boot=1000, seed=7):
     out["rho_ci_halfwidth"] = float((hi - lo) / 2)
 
 
+# ---------- d-mean head (gate doc Amendment A, item 4) ----------
+
+def _dm_slope(sel):
+    num = sum(float(w["dm_x"] @ w["dm_y"]) for w in sel)
+    den = sum(float(w["dm_x"] @ w["dm_x"]) for w in sel)
+    return num / max(den, 1e-18)
+
+
+def d_mean_report(rows, out, seed=13):
+    train = [w for w in rows if not w["held"]]
+    held = [w for w in rows if w["held"]]
+    if not train or not held:
+        out["d_mean"] = "SKIPPED: empty split"
+        return None
+    c = _dm_slope(train)
+    out["d_mean_slope_train"] = c
+    out["d_mean_slope_by_phase"] = {
+        ph: _dm_slope([w for w in train if w["phase"] == ph])
+        for ph in (0, 1, 2) if any(w["phase"] == ph for w in train)}
+    # held-out within-set R^2 vs zero model, paired bootstrap by set
+    sse_model = np.array([float(np.sum((w["dm_y"] - c * w["dm_x"]) ** 2))
+                          for w in held])
+    sse_zero = np.array([float(np.sum(w["dm_y"] ** 2)) for w in held])
+    out["d_mean_heldout_R2"] = 1.0 - float(sse_model.sum()) / \
+        max(float(sse_zero.sum()), 1e-18)
+    rng = np.random.default_rng(seed)
+    n = len(held)
+    wins = 0
+    for _ in range(2000):
+        idx = rng.integers(0, n, n)
+        wins += float(sse_zero[idx].sum()) > float(sse_model[idx].sum())
+    out["d_mean_beats_zero_frac"] = wins / 2000.0
+    return c
+
+
 # ---------- sigma_d ----------
 
 def _design(rows, names):
@@ -165,14 +205,14 @@ def _design(rows, names):
         np.ones((len(rows), 1))
 
 
-def sigma_d_report(rows, out, seed=11):
+def sigma_d_report(rows, out, seed=11, target="spread2", label="sigma_d"):
     train = [w for w in rows if not w["held"]]
     held = [w for w in rows if w["held"]]
     if not train or not held:
-        out["sigma_d_models"] = "SKIPPED: empty train or held split"
+        out[f"{label}_models"] = "SKIPPED: empty train or held split"
         return
-    ytr = np.log(np.maximum([w["spread2"] for w in train], 1e-12))
-    yhe = np.log(np.maximum([w["spread2"] for w in held], 1e-12))
+    ytr = np.log(np.maximum([w[target] for w in train], 1e-12))
+    yhe = np.log(np.maximum([w[target] for w in held], 1e-12))
 
     candidates = [[], *([n] for n in FEATURE_ORDER), FEATURE_ORDER]
     results = {}
@@ -194,7 +234,7 @@ def sigma_d_report(rows, out, seed=11):
             "heldout_logR2": round(r2, 4), "heldout_calib": round(calib, 3),
             "heldout_log_resid_sd": round(float(np.std(res_he)), 3),
         }
-    out["sigma_d_models"] = results
+    out[f"{label}_models"] = results
 
     # paired bootstrap: full model heldout R2 > 0?
     names = FEATURE_ORDER
@@ -208,7 +248,7 @@ def sigma_d_report(rows, out, seed=11):
     for _ in range(2000):
         idx = rng.integers(0, n, n)
         diffs.append(float(np.mean(res_const[idx]) - np.mean(res_full[idx])))
-    out["sigma_d_full_beats_const_frac"] = float(np.mean(np.array(diffs) > 0))
+    out[f"{label}_full_beats_const_frac"] = float(np.mean(np.array(diffs) > 0))
 
 
 def main():
@@ -227,7 +267,15 @@ def main():
               f"(gate sanity floor — extend the run)", file=sys.stderr)
     sigma_report(rows, out)
     rho_report(rows, out)
+    c = d_mean_report(rows, out)
     sigma_d_report(rows, out)
+    if c is not None:
+        # Amendment A item 5: sigma_d refit on d-mean residual spread
+        for w in rows:
+            resid = w["dm_y"] - c * w["dm_x"]
+            w["spread2_resid"] = float(np.var(resid, ddof=1))
+        sigma_d_report(rows, out, seed=17, target="spread2_resid",
+                       label="sigma_d_resid")
 
     print(json.dumps(out, indent=2))
     if args.json_out:
