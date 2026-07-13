@@ -94,6 +94,51 @@ now satisfy:
    consumes) calibrated in-search at every rho under every policy; the
    recompute-from-scratch-per-reveal shape is sound.
 
+## Testbed round 3 (bmcts, 2026-07-12, same day) — preconditions LANDED
+
+Rounds 3 resolved requirements 1–5 above (bmcts:
+docs/seqreveal-m2-round3-gate.md; results/seqreveal-m2-round3.{json,log}).
+**The sequential-reveal stack to port is frozen:** Stein-corrected
+d-mean-aware posterior (`shrink_siblings_stein`) + prior d-mean head +
+KG routing, P-var projection — in bmcts flags:
+`seq_reveal, use_stein, use_dmean, policy="voi", seq_kg`.
+
+1. **Stein anchor**: one closed form covers the un-dropped Cov(alpha,
+   d_a) AND per-child prior means (GLS-validated at every |E|). With it,
+   child-level and pairwise claims are EXACT under the generative
+   process (z std [0.97, 1.03]). New PROOF, exportable: the anchor echo
+   is only half covariance-fixable — the exact n=0 posterior of the
+   set's max given the anchor has variance anchor_var exactly (the
+   anchor measured C+D and the target IS C+D; the cancellation is
+   max-functional tail dependence). Stein removes exactly 2g of the
+   2 v_D claimed excess; the remainder is a conservative-only max-level
+   residual at strong anchors. It ships as documented conservatism —
+   do NOT attempt to fix it with any covariance-level model in C++.
+2. **d-mean head**: REQUIRED and a large regret win (roughly halves
+   testbed regret at 100 evals vs the best headless variant; best root
+   calibration on the board). Key theory point for the port: reveal-
+   order bias is a MEASURABILITY question — any order the engine can
+   realize is a function of the policy prior the posterior already
+   conditions on, hence bias-free (prior-ordered reveal calibrates to
+   |z mean| 0.033). The scary true-value-ordered drift is an
+   unrealizable oracle stress. Fit the head on M1 data; residual in
+   LOG space per the v7 lesson; sigma_r misreport degrades kappa-like
+   gracefully (2x conservative, 0.5x mildly optimistic).
+3. **Routing**: under the per-eval cost model the currency is the
+   predicted ONE-REVEAL variance drop D (data-independent, two dummy
+   posterior calls; backup D = max_i w_i D_i — the old G-backup shape
+   with honest units), NOT total resolvable variance R. voi-KG beats
+   voi-R everywhere (p <= 0.005), beats uniform at B=100 (p <= 0.028;
+   voi-R LOST to uniform), ties Thompson. R keeps only the
+   exhaustion-gating role.
+4. **Selection residual**: largely dissolved by the round-3 stack at
+   B=100 (-0.04..+0.07 vs matched all-at-once); +0.13..+0.19 pockets at
+   B=30, rho >= 0.6 remain — tracked under selection-aware accounting,
+   not a port blocker.
+5. Still open before the FULL recommended stack exists in seq mode:
+   use_infer (regional-bias inference) is not re-derived for growing E
+   — port order should be seq stack first, inference second.
+
 ## What M2 ships regardless of the above
 
 - The exact math library (bayesposterior.{h,cpp}): Clark pair/fused
