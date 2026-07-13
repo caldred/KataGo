@@ -54,6 +54,46 @@ already records (prior, deep value) per child, so this head is fittable
 without new data. NOT required for M2 correctness (mu_a = C_hat is the
 prior-free special case); record held-out value before adopting.
 
+## Testbed verdict (bmcts, 2026-07-12) — gate FAILED, requirements below
+
+The prototype + pre-registered gate ran in the testbed
+(bmcts: docs/seqreveal-m2-gate.md, results/seqreveal-m2*.log,
+shrink_siblings_partial + Bayes(seq_reveal=True)). Answers to this
+note's open questions, and the conditions the C++ implementation must
+now satisfy:
+
+1. **The BLUP orthogonality argument DOES survive k -> |E|** (the
+   identity only needs w = sigma_d^2/v_n) — the evaluated block keeps
+   the all-at-once structure exactly (GLS-verified). **But the exact
+   one-shared-X collapse does NOT survive |E| < k**: the posterior is
+   two-block exchangeable (eval-eval / unev-unev / cross) and a
+   one-factor state can honor only two of the three blocks. Use the
+   variance-matching projection (b_unev = sqrt(Var(A)/V_XE), private =
+   sigma_d^2 exactly): the BLUP-projection alternative biases the
+   parent Clark max up to z-mean +0.48 at k=20/low |E|; P-var passed
+   every well-specified max band.
+2. **The policy-prior d-mean offset head is REQUIRED, not optional.**
+   Value-ordered reveal (the realistic policy-ordered case) makes E a
+   biased-high subsample: prior-free unevaluated-sibling posteriors hit
+   z-mean +1.9. This head must ship with M2, fit from the M1 data.
+3. **The dropped Cov(alpha, d_a) anchor echo is exposed at low |E|**
+   (claimed max-level variance up to ~2x true at rho=0/strong anchors;
+   conservative-only). All-at-once bmcts masks it; sequential reveal
+   lives exactly where it bites. Un-dropping it (spread_table already
+   computes covDd) is a NEW mechanism change: derive + gate in the
+   testbed before porting.
+4. **Adaptive descent adds a seq-specific ~+0.1..+0.19 root optimism**
+   vs matched all-at-once eval counts (optional stopping within sets;
+   absent under uniform descent, invariant to projection) — the
+   selection-aware-accounting roadmap item now has a measured M2 form.
+5. **The voi routing statistic does not survive partial reveal as-is**
+   (voi-seq regret WORSE than uniform-seq at eval budgets while ts-seq
+   is healthy). Re-derive contested x resolvable under partial
+   observation before trusting voi in the engine.
+6. What held: unevaluated-sibling posteriors (the object descent
+   consumes) calibrated in-search at every rho under every policy; the
+   recompute-from-scratch-per-reveal shape is sound.
+
 ## What M2 ships regardless of the above
 
 - The exact math library (bayesposterior.{h,cpp}): Clark pair/fused
