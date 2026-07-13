@@ -47,6 +47,19 @@ struct SearchParams {
   double uncertaintyExponent; //Visits weight scales inversely with this power of the uncertainty
   double uncertaintyMaxWeight; //Add minimum uncertainty so that the most weight a node can have is this
 
+  //Bayesian search (bmcts port, experimental). Behind-the-flag scaffolding for
+  //the per-node Gaussian posterior stack (search/bayesposterior.h): two-component
+  //error filter, Clark/quadrature max backup, hierarchical shrinkage of fresh
+  //children. Currently consumed by NOTHING in the search: these params only
+  //plumb through config/JSON so later milestones can flip the switch.
+  bool useBayesSearch; //Master switch for the Bayesian posterior search stack
+  double bayesRho; //Sibling residual error correlation (shared fraction of eval error variance)
+  double bayesSigmaA; //Eval-sigma head, log space: log(sigma) = bayesSigmaA + bayesSigmaB * log(shorttermError)
+  double bayesSigmaB; //Eval-sigma head, log space: slope on log(shorttermError)
+  double bayesSigmaDA; //Sigma_d head (fresh-sibling value spread), log space: intercept
+  double bayesSigmaDB; //Sigma_d head, log space: slope on its feature
+  double bayesDefaultSigma; //Fallback eval stdev when no head signal is available
+
   //Graph search
   bool useGraphSearch; //Enable graph search instead of tree search?
   int graphSearchRepBound; //Rep bound to use for graph search transposition safety. Higher will reduce transpositions but be more safe.

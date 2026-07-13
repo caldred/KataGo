@@ -247,6 +247,7 @@ add_executable(katago
   book/book.cpp
   book/bookcssjs.cpp
   search/timecontrols.cpp
+  search/bayesposterior.cpp
   search/searchparams.cpp
   search/mutexpool.cpp
   search/search.cpp
@@ -274,6 +275,7 @@ add_executable(katago
   program/play.cpp
   program/selfplaymanager.cpp
   ${GIT_HEADER_FILE_ALWAYS_UPDATED}
+  tests/testbayes.cpp
   tests/testboardarea.cpp
   tests/testboardbasic.cpp
   tests/testbook.cpp

@@ -37,6 +37,13 @@ SearchParams::SearchParams()
    uncertaintyCoeff(0.2),
    uncertaintyExponent(1.0),
    uncertaintyMaxWeight(8.0),
+   useBayesSearch(false),
+   bayesRho(0.0),
+   bayesSigmaA(0.0),
+   bayesSigmaB(1.0),
+   bayesSigmaDA(-5.991464547107982), //log(0.0025)
+   bayesSigmaDB(0.0),
+   bayesDefaultSigma(0.05),
    useGraphSearch(false),
    graphSearchRepBound(11),
    graphSearchCatchUpLeakProb(0.0),
@@ -156,6 +163,14 @@ bool SearchParams::operator==(const SearchParams& other) const {
     uncertaintyCoeff == other.uncertaintyCoeff &&
     uncertaintyExponent == other.uncertaintyExponent &&
     uncertaintyMaxWeight == other.uncertaintyMaxWeight &&
+
+    useBayesSearch == other.useBayesSearch &&
+    bayesRho == other.bayesRho &&
+    bayesSigmaA == other.bayesSigmaA &&
+    bayesSigmaB == other.bayesSigmaB &&
+    bayesSigmaDA == other.bayesSigmaDA &&
+    bayesSigmaDB == other.bayesSigmaDB &&
+    bayesDefaultSigma == other.bayesDefaultSigma &&
 
     useGraphSearch == other.useGraphSearch &&
     graphSearchRepBound == other.graphSearchRepBound &&
@@ -400,6 +415,14 @@ json SearchParams::changeableParametersToJson() const {
   ret["uncertaintyExponent"] = uncertaintyExponent;
   ret["uncertaintyMaxWeight"] = uncertaintyMaxWeight;
 
+  ret["useBayesSearch"] = useBayesSearch;
+  ret["bayesRho"] = bayesRho;
+  ret["bayesSigmaA"] = bayesSigmaA;
+  ret["bayesSigmaB"] = bayesSigmaB;
+  ret["bayesSigmaDA"] = bayesSigmaDA;
+  ret["bayesSigmaDB"] = bayesSigmaDB;
+  ret["bayesDefaultSigma"] = bayesDefaultSigma;
+
   ret["useGraphSearch"] = useGraphSearch;
   ret["graphSearchRepBound"] = graphSearchRepBound;
   ret["graphSearchCatchUpLeakProb"] = graphSearchCatchUpLeakProb;
@@ -545,6 +568,14 @@ void SearchParams::printParams(std::ostream& out) const {
   PRINTPARAM(uncertaintyCoeff);
   PRINTPARAM(uncertaintyExponent);
   PRINTPARAM(uncertaintyMaxWeight);
+
+  PRINTPARAM(useBayesSearch);
+  PRINTPARAM(bayesRho);
+  PRINTPARAM(bayesSigmaA);
+  PRINTPARAM(bayesSigmaB);
+  PRINTPARAM(bayesSigmaDA);
+  PRINTPARAM(bayesSigmaDB);
+  PRINTPARAM(bayesDefaultSigma);
 
 
   PRINTPARAM(useGraphSearch);

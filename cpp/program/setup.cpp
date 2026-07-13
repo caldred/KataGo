@@ -551,6 +551,29 @@ vector<SearchParams> Setup::loadParams(
     else if(cfg.contains("uncertaintyMaxWeight"))   params.uncertaintyMaxWeight = cfg.getDouble("uncertaintyMaxWeight", 1.0, 100.0);
     else                                            params.uncertaintyMaxWeight = 8.0;
 
+    //Bayesian search (bmcts port, experimental). Behind-the-flag: consumed by nothing yet.
+    if(cfg.contains("useBayesSearch"+idxStr)) params.useBayesSearch = cfg.getBool("useBayesSearch"+idxStr);
+    else if(cfg.contains("useBayesSearch"))   params.useBayesSearch = cfg.getBool("useBayesSearch");
+    else                                      params.useBayesSearch = false;
+    if(cfg.contains("bayesRho"+idxStr)) params.bayesRho = cfg.getDouble("bayesRho"+idxStr, 0.0, 0.99);
+    else if(cfg.contains("bayesRho"))   params.bayesRho = cfg.getDouble("bayesRho", 0.0, 0.99);
+    else                                params.bayesRho = 0.0;
+    if(cfg.contains("bayesSigmaA"+idxStr)) params.bayesSigmaA = cfg.getDouble("bayesSigmaA"+idxStr, -20.0, 20.0);
+    else if(cfg.contains("bayesSigmaA"))   params.bayesSigmaA = cfg.getDouble("bayesSigmaA", -20.0, 20.0);
+    else                                   params.bayesSigmaA = 0.0;
+    if(cfg.contains("bayesSigmaB"+idxStr)) params.bayesSigmaB = cfg.getDouble("bayesSigmaB"+idxStr, -10.0, 10.0);
+    else if(cfg.contains("bayesSigmaB"))   params.bayesSigmaB = cfg.getDouble("bayesSigmaB", -10.0, 10.0);
+    else                                   params.bayesSigmaB = 1.0;
+    if(cfg.contains("bayesSigmaDA"+idxStr)) params.bayesSigmaDA = cfg.getDouble("bayesSigmaDA"+idxStr, -20.0, 20.0);
+    else if(cfg.contains("bayesSigmaDA"))   params.bayesSigmaDA = cfg.getDouble("bayesSigmaDA", -20.0, 20.0);
+    else                                    params.bayesSigmaDA = -5.991464547107982; //log(0.0025)
+    if(cfg.contains("bayesSigmaDB"+idxStr)) params.bayesSigmaDB = cfg.getDouble("bayesSigmaDB"+idxStr, -10.0, 10.0);
+    else if(cfg.contains("bayesSigmaDB"))   params.bayesSigmaDB = cfg.getDouble("bayesSigmaDB", -10.0, 10.0);
+    else                                    params.bayesSigmaDB = 0.0;
+    if(cfg.contains("bayesDefaultSigma"+idxStr)) params.bayesDefaultSigma = cfg.getDouble("bayesDefaultSigma"+idxStr, 0.0, 10.0);
+    else if(cfg.contains("bayesDefaultSigma"))   params.bayesDefaultSigma = cfg.getDouble("bayesDefaultSigma", 0.0, 10.0);
+    else                                         params.bayesDefaultSigma = 0.05;
+
     if(cfg.contains("useGraphSearch"+idxStr)) params.useGraphSearch = cfg.getBool("useGraphSearch"+idxStr);
     else if(cfg.contains("useGraphSearch"))   params.useGraphSearch = cfg.getBool("useGraphSearch");
     else                                      params.useGraphSearch = (setupFor != SETUP_FOR_DISTRIBUTED);

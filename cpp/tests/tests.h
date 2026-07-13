@@ -44,6 +44,9 @@ namespace Tests {
   void runBoardSymmetryTests();
   void runSymmetryDifferenceTests();
 
+  //testbayes.cpp
+  void runBayesTests();
+
   //testsearchnonn.cpp
   void runNNLessSearchTests();
   //testsearch.cpp
