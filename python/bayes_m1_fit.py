@@ -81,6 +81,8 @@ def build(sets_):
 
 def sigma_report(rows, out):
     def ratio(sel):
+        if not sel:
+            return float("nan")
         rr = np.concatenate([w["r"] for w in sel])
         ss = np.concatenate([w["st"] for w in sel])
         return math.sqrt(float(np.mean(rr * rr)) / float(np.mean(ss * ss)))
@@ -114,6 +116,8 @@ def sigma_report(rows, out):
     out["sigma_corr_coef"] = {"a": a, "b": b}
 
     def corrected_ratio(sel):
+        if not sel:
+            return float("nan")
         rr = np.concatenate([w["r"] for w in sel])
         ss = np.concatenate([w["st"] for w in sel])
         pred2 = np.exp(a + b * np.log(ss * ss) - LOG_CHI2_1_MEAN)
@@ -164,6 +168,9 @@ def _design(rows, names):
 def sigma_d_report(rows, out, seed=11):
     train = [w for w in rows if not w["held"]]
     held = [w for w in rows if w["held"]]
+    if not train or not held:
+        out["sigma_d_models"] = "SKIPPED: empty train or held split"
+        return
     ytr = np.log(np.maximum([w["spread2"] for w in train], 1e-12))
     yhe = np.log(np.maximum([w["spread2"] for w in held], 1e-12))
 
