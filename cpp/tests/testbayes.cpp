@@ -211,6 +211,85 @@ static int runGoldenTests(istream& in) {
           checkCloseTol(where + " negation w[" + Global::intToString(i) + "]", w2[i], w[i], 1e-12);
       }
     }
+    else if(tok == "extmom") {
+      int k = readInt(in, where);
+      vector<double> dMeans = readDoubles(in, k, where);
+      double sigmaR = readDouble(in, where);
+      bool isMax = readInt(in, where) != 0;
+      double expectedED = readDouble(in, where);
+      double expectedVD = readDouble(in, where);
+      double expectedG = readDouble(in, where);
+      double eD, vD, g;
+      BayesPosterior::extremeMomentsGaussian(dMeans, sigmaR, isMax, eD, vD, g);
+      checkClose(where + " eD", eD, expectedED);
+      checkClose(where + " vD", vD, expectedVD);
+      checkClose(where + " g", g, expectedG);
+      testAssert(vD >= 0.0);
+      testAssert(g >= 0.0);
+    }
+    else if(tok == "stein") {
+      int k = readInt(in, where);
+      int n = readInt(in, where);
+      vector<double> evals = readDoubles(in, n, where);
+      vector<int> evalIdx(n);
+      for(int i = 0; i < n; i++)
+        evalIdx[i] = readInt(in, where);
+      double vU = readDouble(in, where);
+      double varS = readDouble(in, where);
+      double anchorMu = readDouble(in, where);
+      double anchorVar = readDouble(in, where);
+      double sigmaR = readDouble(in, where);
+      double eD = readDouble(in, where);
+      double vD = readDouble(in, where);
+      double g = readDouble(in, where);
+      bool hasDMeans = readInt(in, where) != 0;
+      vector<double> dMeans;
+      if(hasDMeans)
+        dMeans = readDoubles(in, k, where);
+      vector<double> expectedMus = readDoubles(in, k, where);
+      vector<double> expectedVPriv = readDoubles(in, k, where);
+      vector<double> expectedB = readDoubles(in, k, where);
+      double expectedVX = readDouble(in, where);
+      double expectedKappa = readDouble(in, where);
+      double expectedCEE = readDouble(in, where);
+      double expectedCUU = readDouble(in, where);
+      double expectedCUE = readDouble(in, where);
+      double expectedVE = readDouble(in, where);
+      double expectedVU = readDouble(in, where);
+      BayesPosterior::SteinShrink res = BayesPosterior::shrinkSiblingsStein(
+        evals, evalIdx, k, vU, varS, anchorMu, anchorVar, sigmaR, eD, vD, g,
+        hasDMeans ? &dMeans : NULL);
+      testAssert((int)res.mus.size() == k);
+      testAssert((int)res.vPriv.size() == k);
+      testAssert((int)res.b.size() == k);
+      for(int i = 0; i < k; i++) {
+        checkClose(where + " mu[" + Global::intToString(i) + "]", res.mus[i], expectedMus[i]);
+        checkClose(where + " vPriv[" + Global::intToString(i) + "]", res.vPriv[i], expectedVPriv[i]);
+        checkClose(where + " b[" + Global::intToString(i) + "]", res.b[i], expectedB[i]);
+        //Invariant: private variances are clamped nonnegative in every branch
+        testAssert(res.vPriv[i] >= 0.0);
+      }
+      checkClose(where + " vX", res.vX, expectedVX);
+      checkClose(where + " kappaAlpha", res.kappaAlpha, expectedKappa);
+      checkClose(where + " cEE", res.cEE, expectedCEE);
+      checkClose(where + " cUU", res.cUU, expectedCUU);
+      checkClose(where + " cUE", res.cUE, expectedCUE);
+      checkClose(where + " vE", res.vE, expectedVE);
+      checkClose(where + " vU", res.vU, expectedVU);
+      //Invariants: the factor variance is a covariance block clamped by the
+      //branch conditions, and kappa is clipped to [0,1] at the end.
+      testAssert(res.vX >= 0.0);
+      testAssert(res.kappaAlpha >= 0.0 && res.kappaAlpha <= 1.0);
+      //n = 0 invariant: with no evals the means are exactly the anchor-derived
+      //prior means m_A + m_a = anchorMu - eD + dMeans[a] (no residual update).
+      if(n == 0) {
+        for(int i = 0; i < k; i++) {
+          double priorMu = (anchorMu - eD) + (hasDMeans ? dMeans[i] : 0.0);
+          checkCloseTol(where + " n=0 mus identity[" + Global::intToString(i) + "]",
+                        res.mus[i], priorMu, 1e-15);
+        }
+      }
+    }
     else {
       Global::fatalError("Bayes golden file: unknown record type '" + tok + "'");
     }

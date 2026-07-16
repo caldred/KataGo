@@ -1,5 +1,6 @@
 #include "../search/searchnode.h"
 
+#include "../search/bayesnodestate.h"
 #include "../search/search.h"
 #include "../core/test.h"
 
@@ -169,7 +170,8 @@ SearchNode::SearchNode(Player pla, bool fnt, uint32_t mIdx)
    lastSubtreeValueBiasDeltaSum(0.0),
    lastSubtreeValueBiasWeight(0.0),
    subtreeValueBiasTableEntry(),
-   dirtyCounter(0)
+   dirtyCounter(0),
+   bayesState(NULL)
 {
 }
 
@@ -190,7 +192,8 @@ SearchNode::SearchNode(const SearchNode& other, bool fnt, bool copySubtreeValueB
    lastSubtreeValueBiasDeltaSum(0.0),
    lastSubtreeValueBiasWeight(0.0),
    subtreeValueBiasTableEntry(),
-   dirtyCounter(other.dirtyCounter.load(std::memory_order_acquire))
+   dirtyCounter(other.dirtyCounter.load(std::memory_order_acquire)),
+   bayesState(NULL)
 {
   {
     std::shared_ptr<NNOutput>* otherVal = other.nnOutput.load(std::memory_order_acquire);
@@ -452,4 +455,6 @@ SearchNode::~SearchNode() {
     delete nnOutput;
   if(humanOutput != NULL)
     delete humanOutput;
+  if(bayesState != NULL)
+    delete bayesState;
 }

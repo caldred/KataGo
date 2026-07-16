@@ -59,6 +59,7 @@ struct SearchParams {
   double bayesSigmaDA; //Sigma_d head (fresh-sibling value spread), log space: intercept
   double bayesSigmaDB; //Sigma_d head, log space: slope on its feature
   double bayesDefaultSigma; //Fallback eval stdev when no head signal is available
+  double bayesDMean; //d-mean head: mover-persp winrate offset per unit centered log policy prior
 
   //Graph search
   bool useGraphSearch; //Enable graph search instead of tree search?

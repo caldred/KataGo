@@ -326,6 +326,10 @@ void Search::recomputeNodeStats(SearchNode& node, SearchThread& thread, int numV
   node.stats.weightSum.store(weightSum,std::memory_order_release);
   node.stats.visits.fetch_add(numVisitsToAdd,std::memory_order_release);
   node.statsLock.clear(std::memory_order_release);
+
+  //Bayesian posterior side state (pure passenger at M2; audited by gates)
+  if(searchParams.useBayesSearch)
+    bayesRecomputeNodeStats(node, isRoot);
 }
 
 void Search::downweightBadChildrenAndNormalizeWeight(

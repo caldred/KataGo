@@ -66,6 +66,44 @@ namespace BayesPosterior {
     std::vector<double>& musOut, double& vPrivOut, double& vXOut, double& kappaAlphaOut
   );
 
+  //(E_D, v_D, g) of the within-set extreme D = max/min_a (m_a + delta_a),
+  //delta_a iid N(0, sigmaR^2): Clark moments over {N(m_a, sigmaR^2)} (exact at
+  //k = 2, standard Clark approximation above), and the homogenized Stein
+  //covariance g = Cov(D, d_a) averaged over the set — exactly sigmaR^2/k.
+  //eD is SIGNED (min nodes negative-mirrored). Exact port of bmcts
+  //extreme_moments_gaussian.
+  void extremeMomentsGaussian(
+    const std::vector<double>& dMeans, double sigmaR, bool isMaxNode,
+    double& eD, double& vD, double& g
+  );
+
+  //Result of shrinkSiblingsStein: full-vector per-child state (mus, vPriv, b
+  //all length k) plus the exact covariance blocks (diagnostics; the (b, vX)
+  //claim approximates cUU/cUE per the P-var projection). Mirrors the Python
+  //SteinShrink named tuple field-for-field (vU here is the tuple's v_u output,
+  //the unevaluated-child total variance, not the input measurement noise).
+  struct SteinShrink {
+    std::vector<double> mus, vPriv, b;
+    double vX, kappaAlpha, cEE, cUU, cUE, vE, vU;
+  };
+
+  //Stein-corrected, d-mean-aware partial-observation posterior. Exact port of
+  //bmcts shrink_siblings_stein (M2 round 3); see the Python docstring for the
+  //full derivation. evals are the n observed values, evalIdx their child
+  //indices in [0, k). (eD, vD, g) are the D_moments triple, eD signed (caller
+  //mirrors min nodes). dMeans may be NULL (treated as all zeros). If
+  //sigmaR^2 + vU <= 1e-18 (exact identical residuals) evaluated children come
+  //back exact and everything else rides the mean residual shift, all
+  //variances/blocks zero. c0 = anchorVar + vD - 2g may be NEGATIVE and is
+  //deliberately not clamped; only the documented output clamps apply
+  //(vPriv floors at 0, kappaAlpha clipped to [0,1], den floored at 1e-12).
+  SteinShrink shrinkSiblingsStein(
+    const std::vector<double>& evals, const std::vector<int>& evalIdx,
+    int k, double vU, double varS, double anchorMu, double anchorVar,
+    double sigmaR, double eD, double vD, double g,
+    const std::vector<double>* dMeans
+  );
+
   //Children-derived measurement of a node's value with two-component errors.
   //Child a's estimate error is b_a*s + eta_a, s ~ N(0, varS) shared by all
   //children, eta_a ~ N(0, childVPrivs[a]) independent. Integrates the Clark

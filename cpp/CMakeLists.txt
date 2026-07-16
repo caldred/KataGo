@@ -248,6 +248,7 @@ add_executable(katago
   book/bookcssjs.cpp
   search/timecontrols.cpp
   search/bayesposterior.cpp
+  search/bayessearch.cpp
   search/searchparams.cpp
   search/mutexpool.cpp
   search/search.cpp

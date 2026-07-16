@@ -12,6 +12,7 @@ typedef int SearchNodeState; // See SearchNode::STATE_*
 
 struct SearchNode;
 struct SearchThread;
+struct BayesNodeState;
 
 struct NodeStatsAtomic {
   std::atomic<int64_t> visits;
@@ -226,6 +227,11 @@ struct SearchNode {
   std::shared_ptr<SubtreeValueBiasEntry> subtreeValueBiasTableEntry;
 
   std::atomic<int32_t> dirtyCounter;
+
+  //Bayesian posterior side state (useBayesSearch only, else always NULL).
+  //Allocated lazily by Search::bayesRecomputeNodeStats; single-threaded by
+  //contract (useBayesSearch enforces numSearchThreads == 1), so unguarded.
+  BayesNodeState* bayesState;
 
   //--------------------------------------------------------------------------------
   SearchNode(Player prevPla, bool forceNonTerminal, uint32_t mutexIdx);

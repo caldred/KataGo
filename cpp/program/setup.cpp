@@ -573,6 +573,9 @@ vector<SearchParams> Setup::loadParams(
     if(cfg.contains("bayesDefaultSigma"+idxStr)) params.bayesDefaultSigma = cfg.getDouble("bayesDefaultSigma"+idxStr, 0.0, 10.0);
     else if(cfg.contains("bayesDefaultSigma"))   params.bayesDefaultSigma = cfg.getDouble("bayesDefaultSigma", 0.0, 10.0);
     else                                         params.bayesDefaultSigma = 0.05;
+    if(cfg.contains("bayesDMean"+idxStr)) params.bayesDMean = cfg.getDouble("bayesDMean"+idxStr, -1.0, 1.0);
+    else if(cfg.contains("bayesDMean"))   params.bayesDMean = cfg.getDouble("bayesDMean", -1.0, 1.0);
+    else                                  params.bayesDMean = 0.0;
 
     if(cfg.contains("useGraphSearch"+idxStr)) params.useGraphSearch = cfg.getBool("useGraphSearch"+idxStr);
     else if(cfg.contains("useGraphSearch"))   params.useGraphSearch = cfg.getBool("useGraphSearch");

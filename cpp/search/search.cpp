@@ -612,6 +612,18 @@ void Search::beginSearch(bool pondering) {
     throw StringError("Search got from NNEval nnXLen = " + Global::intToString(nnXLen) +
                       " nnYLen = " + Global::intToString(nnYLen) + " but was asked to search board with larger x or y size");
 
+  //M2 contract: the Bayesian side state is single-threaded, tree-mode only
+  //(sibling-set exclusivity breaks under graph search; virtual loss vs
+  //deterministic descent is M5). See docs/bayes-port-plan.md.
+  if(searchParams.useBayesSearch) {
+    if(searchParams.numThreads > 1)
+      throw StringError("useBayesSearch requires numSearchThreads = 1 (M5 will lift this)");
+    if(searchParams.useGraphSearch)
+      throw StringError("useBayesSearch requires useGraphSearch = false (DAG compatibility is a later milestone)");
+    if(searchParams.useUncertainty)
+      throw StringError("useBayesSearch requires useUncertainty = false (the shortterm-error head is consumed as posterior variance; uncertainty-weighting would double-count it)");
+  }
+
   rootBoard.checkConsistency();
 
   numSearchesBegun++;

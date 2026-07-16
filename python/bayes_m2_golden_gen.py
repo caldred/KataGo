@@ -19,6 +19,10 @@ line. Numbers are printed with repr() (shortest round-trip). Records:
     shrink    k evals*k vU varS sigmaD anchorMu anchorVar isMax cK vK
               |  mus*k vPriv vX kappaAlpha
     nodepost  k mus*k vprivs*k bs*k varS isMax  |  m vPriv bOut w*k
+    extmom    k dmeans*k sigmaR isMax  |  eD vD g
+    stein     k n evals*n idx*n vU varS anchorMu anchorVar sigmaR
+              eD vD g hasDMeans dmeans*k(only if hasDMeans)
+              |  mus*k vpriv*k b*k vX kappaAlpha cEE cUU cUE vE vU
     end
 
 (the '|' is notional; records are flat token sequences, inputs then outputs)
@@ -187,6 +191,144 @@ for mus, v_privs, bs, var_s, is_max in NODEPOST_CASES:
     lines.append(
         f"nodepost {k} {fmts(mus)} {fmts(v_privs)} {fmts(bs)} {fmt(var_s)} "
         f"{1 if is_max else 0} {fmt(m)} {fmt(v_priv)} {fmt(b_out)} {fmts(w)}")
+
+# ---------------------------------------------------------------- extmom
+# NOTE: rng draws below extend the same seeded stream AFTER all draws above,
+# so all earlier records are unchanged on regeneration.
+EXTMOM_MEANS = {
+    1: [0.12],
+    2: [0.25, -0.1],
+    5: [0.3, -0.22, 0.05, 0.18, -0.02],
+    8: list(rng.normal(0.0, 0.2, 8)),
+    20: list(rng.normal(0.0, 0.15, 20)),
+    40: list(rng.normal(0.0, 0.25, 40)),
+}
+for k in (1, 2, 5, 8, 20, 40):
+    for sigma_r in (1e-9, 0.05, 0.3):
+        for is_max in (True, False):
+            e_d, v_d, g = P.extreme_moments_gaussian(
+                np.asarray(EXTMOM_MEANS[k], dtype=float), sigma_r, is_max)
+            lines.append(
+                f"extmom {k} {fmts(EXTMOM_MEANS[k])} {fmt(sigma_r)} "
+                f"{1 if is_max else 0} {fmt(e_d)} {fmt(v_d)} {fmt(g)}")
+
+
+# ---------------------------------------------------------------- stein
+STEIN_DMEANS = {
+    2: [0.2, -0.15],
+    5: [0.3, -0.25, 0.08, -0.02, 0.16],
+    8: [0.3, -0.3, 0.12, 0.05, -0.18, 0.22, -0.07, 0.01],
+    20: list(rng.normal(0.0, 0.15, 20)),
+}
+STEIN_EVALS_FULL = {k: list(rng.normal(0.05, 0.25, k)) for k in (2, 5, 8, 20)}
+STEIN_A_MU = 0.08
+STEIN_A_VAR = 0.015
+
+
+def emit_stein(k, evals, idx, v_u, var_s, a_mu, a_var, sigma_r, d_moments,
+               d_means):
+    res = P.shrink_siblings_stein(
+        np.asarray(evals, dtype=float), np.asarray(idx, dtype=int), k,
+        v_u, var_s, a_mu, a_var, sigma_r, d_moments,
+        None if d_means is None else np.asarray(d_means, dtype=float))
+    e_d, v_d, g = d_moments
+    n = len(evals)
+    toks = [f"stein {k} {n}"]
+    if n:
+        toks.append(fmts(evals))
+        toks.append(" ".join(str(int(i)) for i in idx))
+    toks.append(f"{fmt(v_u)} {fmt(var_s)} {fmt(a_mu)} {fmt(a_var)} "
+                f"{fmt(sigma_r)} {fmt(e_d)} {fmt(v_d)} {fmt(g)}")
+    toks.append("1" if d_means is not None else "0")
+    if d_means is not None:
+        toks.append(fmts(d_means))
+    toks.append(f"{fmts(res.mus)} {fmts(res.v_priv)} {fmts(res.b)} "
+                f"{fmt(res.V_X)} {fmt(res.kappa_alpha)} {fmt(res.c_ee)} "
+                f"{fmt(res.c_uu)} {fmt(res.c_ue)} {fmt(res.v_e)} "
+                f"{fmt(res.v_u)}")
+    lines.append(" ".join(toks))
+
+
+# Main battery: n in {0, 1, 2, k-1, k}; v_u/var_s cross; sigma_r sweep;
+# d_means None and non-trivial; D_moments from extreme_moments_gaussian on a
+# max node (min-node D_moments and hand-set triples covered below).
+for k in (2, 5, 8, 20):
+    dm = STEIN_DMEANS[k]
+    evals_full = STEIN_EVALS_FULL[k]
+    for n in sorted(set([0, 1, 2, k - 1, k])):
+        idx = sorted(rng.choice(k, size=n, replace=False).tolist())
+        evals = [evals_full[j] for j in idx]
+        for v_u in (0.0, 0.003):
+            for var_s in (0.0, 0.002):
+                for sigma_r in (1e-9, 0.03, 0.2):
+                    for d_means in (None, dm):
+                        base = [0.0] * k if d_means is None else d_means
+                        d_moments = P.extreme_moments_gaussian(
+                            np.asarray(base, dtype=float), sigma_r, True)
+                        emit_stein(k, evals, idx, v_u, var_s, STEIN_A_MU,
+                                   STEIN_A_VAR, sigma_r, d_moments, d_means)
+
+# Min-node D_moments (E_D negative-mirrored by extreme_moments_gaussian).
+for k in (2, 5, 8, 20):
+    dm = STEIN_DMEANS[k]
+    n = 2
+    idx = [0, k - 1]
+    evals = [STEIN_EVALS_FULL[k][j] for j in idx]
+    for sigma_r in (1e-9, 0.03, 0.2):
+        d_moments = P.extreme_moments_gaussian(
+            np.asarray(dm, dtype=float), sigma_r, False)
+        emit_stein(k, evals, idx, 0.003, 0.002, STEIN_A_MU, STEIN_A_VAR,
+                   sigma_r, d_moments, dm)
+
+# Very negative d_mean in the set (magnitudes beyond the usual 0.3).
+DM_NEG = [0.1, -0.9, 0.2, -0.05, 0.3]
+for is_max in (True, False):
+    d_moments = P.extreme_moments_gaussian(
+        np.asarray(DM_NEG, dtype=float), 0.2, is_max)
+    emit_stein(5, [0.31, -0.72], [1, 3], 0.003, 0.002, STEIN_A_MU,
+               STEIN_A_VAR, 0.2, d_moments, DM_NEG)
+    emit_stein(5, [], [], 0.003, 0.002, STEIN_A_MU, STEIN_A_VAR, 0.2,
+               d_moments, DM_NEG)
+
+# Hand-set D_moments triples, including g large enough to make c0 NEGATIVE
+# (anchor_var small, v_D small, g large), plus the p <= 1e-18 branch with
+# n > 0. Fields: (k, evals, idx, v_u, var_s, a_mu, a_var, sigma_r,
+# (E_D, v_D, g), d_means).
+DM5 = STEIN_DMEANS[5]
+DM8 = STEIN_DMEANS[8]
+STEIN_HANDSET = [
+    # mildly negative c0 (c0 = 1e-4 + 1e-4 - 2*2e-4 = -2e-4), den positive:
+    # hits the c_ee > 1e-18 branch with the max(c_uu, 0) clamp active
+    (5, [0.31, 0.05], [0, 2], 0.003, 0.002, 0.08, 1e-4, 0.2,
+     (0.15, 1e-4, 2e-4), DM5),
+    # same but n = 0: c_uu = c0 < 0, falls through to the else branch
+    (5, [], [], 0.003, 0.0, 0.08, 1e-4, 0.2, (0.15, 1e-4, 2e-4), None),
+    # strongly negative c0 with den < 0 raw: den floored at 1e-12
+    (5, [0.31, 0.05], [0, 2], 0.0, 0.0, 0.08, 1e-4, 0.03,
+     (0.1, 5e-5, 0.01), DM5),
+    # negative c0, full eval set, k = 8
+    (8, [0.3, -0.2, 0.1, 0.05, -0.1, 0.2, -0.05, 0.0], list(range(8)),
+     0.003, 0.002, 0.08, 5e-4, 0.2, (-0.2, 2e-4, 0.02), DM8),
+    # hand-set with large positive E_D/v_D (anchor shift dominates), n = 1
+    (5, [0.4], [4], 0.0, 0.002, 0.08, 0.015, 0.03, (0.5, 0.04, 1.8e-4),
+     DM5),
+    # p <= 1e-18 branch with n > 0 (sigma_r = 0, v_u = 0), with d_means:
+    # mean-shift plus exact-eval overwrite
+    (5, [0.31, -0.12], [1, 3], 0.0, 0.002, 0.08, 0.015, 0.0,
+     (0.12, 0.0, 0.0), DM5),
+    # p <= 1e-18, n > 0, no d_means
+    (5, [0.31, -0.12], [1, 3], 0.0, 0.0, 0.08, 0.015, 0.0,
+     (0.12, 0.0, 0.0), None),
+    # p <= 1e-18 via sigma_r = 1e-10 (s2 = 1e-20), full eval set
+    (8, [0.3, -0.2, 0.1, 0.05, -0.1, 0.2, -0.05, 0.0], list(range(8)),
+     0.0, 0.01, 0.08, 0.02, 1e-10, (0.0, 0.0, 0.0), DM8),
+    # p <= 1e-18 with n = 0: mus = m_A + m untouched, all zeros elsewhere
+    (5, [], [], 0.0, 0.002, 0.08, 0.015, 0.0, (0.12, 0.0, 0.0), DM5),
+]
+for (k, evals, idx, v_u, var_s, a_mu, a_var, sigma_r, d_moments,
+     d_means) in STEIN_HANDSET:
+    emit_stein(k, evals, idx, v_u, var_s, a_mu, a_var, sigma_r, d_moments,
+               d_means)
 
 lines.append("end")
 

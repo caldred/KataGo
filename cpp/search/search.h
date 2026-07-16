@@ -616,6 +616,10 @@ private:
   void updateStatsAfterPlayout(SearchNode& node, SearchThread& thread, bool isRoot);
   void recomputeNodeStats(SearchNode& node, SearchThread& thread, int32_t numVisitsToAdd, bool isRoot);
 
+  //bayessearch.cpp (useBayesSearch posterior side state, M2)
+  void bayesRecomputeNodeStats(SearchNode& node, bool isRoot);
+  double bayesSigmaFromStErr(double stErrWinrate) const;
+
   void downweightBadChildrenAndNormalizeWeight(
     int numChildren,
     double currentTotalWeight,

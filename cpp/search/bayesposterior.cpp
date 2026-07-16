@@ -10,6 +10,13 @@
 #include <cmath>
 #include <map>
 
+//Python/numpy never fuse a*b+c into one fma, but clang's default
+//-ffp-contract=on does, which perturbs results by an ulp — enough to flip
+//branch selections at the 1e-18 thresholds in shrinkSiblingsStein (observed:
+//den = p + n*cR contracted to fmadd made c_ee land exactly on 0.0 instead of
+//6e-18). Forbid contraction in this translation unit to stay bit-compatible.
+#pragma STDC FP_CONTRACT OFF
+
 namespace {
   const double SQRT2 = 1.4142135623730951;         //sqrt(2), matches Python math.sqrt(2.0)
   const double INV_SQRT_2PI = 0.3989422804014327;  //1/sqrt(2*pi)
@@ -269,6 +276,158 @@ void BayesPosterior::shrinkSiblings(
     + gw * gw * (1.0 - omega) * (1.0 - omega) * vN / (double)k;
   vXOut = std::max(VX, 0.0);
   kappaAlphaOut = kappaAlpha;
+}
+
+void BayesPosterior::extremeMomentsGaussian(
+  const std::vector<double>& dMeans, double sigmaR, bool isMaxNode,
+  double& eD, double& vD, double& g
+) {
+  const int k = (int)dMeans.size();
+  assert(k >= 1);
+  double s2 = sigmaR * sigmaR;
+  std::vector<double> m = dMeans;
+  if(!isMaxNode) {
+    for(int i = 0; i < k; i++)
+      m[i] = -m[i];
+  }
+  std::vector<double> vars(k, s2);
+  double E, V;
+  std::vector<double> w;
+  clarkMaxAndWeights(m, vars, E, V, w);
+  if(!isMaxNode)
+    E = -E;
+  eD = E;
+  vD = V;
+  g = s2 / (double)k;
+}
+
+BayesPosterior::SteinShrink BayesPosterior::shrinkSiblingsStein(
+  const std::vector<double>& evals, const std::vector<int>& evalIdx,
+  int k, double vU, double varS, double anchorMu, double anchorVar,
+  double sigmaR, double eD, double vD, double g,
+  const std::vector<double>* dMeans
+) {
+  const int n = (int)evals.size();
+  assert(k >= 1);
+  assert((int)evalIdx.size() == n);
+  assert(n <= k);
+  //m: per-child prior means, zeros when not given (Python d_means=None default)
+  std::vector<double> m;
+  if(dMeans == NULL)
+    m.assign(k, 0.0);
+  else {
+    assert((int)dMeans->size() == k);
+    m = *dMeans;
+  }
+  double s2 = sigmaR * sigmaR;
+  double mA = anchorMu - eD;
+  double A0 = anchorVar;
+  double p = s2 + vU;
+  SteinShrink out;
+  out.mus.resize(k);
+  for(int a = 0; a < k; a++)
+    out.mus[a] = mA + m[a];
+  std::vector<bool> ev(k, false);
+  for(int i = 0; i < n; i++) {
+    assert(evalIdx[i] >= 0 && evalIdx[i] < k);
+    ev[evalIdx[i]] = true;
+  }
+  if(p <= 1e-18) {
+    //exact identical residuals (sigma_r = v_u = 0): evals exact
+    if(n > 0) {
+      double shift = 0.0;
+      for(int i = 0; i < n; i++)
+        shift += evals[i] - m[evalIdx[i]] - mA;
+      shift /= (double)n;
+      for(int a = 0; a < k; a++)
+        out.mus[a] += shift;
+      for(int i = 0; i < n; i++)
+        out.mus[evalIdx[i]] = evals[i];
+    }
+    out.vPriv.assign(k, 0.0);
+    out.b.assign(k, 0.0);
+    out.vX = 0.0;
+    out.kappaAlpha = 0.0;
+    out.cEE = 0.0;
+    out.cUU = 0.0;
+    out.cUE = 0.0;
+    out.vE = 0.0;
+    out.vU = 0.0;
+    return out;
+  }
+  //c0 may be NEGATIVE (strong Stein / weak anchor); deliberately NOT clamped —
+  //only the documented output clamps below apply.
+  double c0 = A0 + vD - 2.0 * g;
+  double cR = c0 + varS;
+  double den = std::max(p + (double)n * cR, 1e-12);
+  double v0 = c0 + s2;
+  if(n > 0) {
+    std::vector<double> r(n);
+    double rb = 0.0;
+    for(int i = 0; i < n; i++) {
+      r[i] = (evals[i] - m[evalIdx[i]]) - mA;
+      rb += r[i];
+    }
+    rb /= (double)n;
+    double shift = c0 * (double)n * rb / den;
+    for(int a = 0; a < k; a++)
+      out.mus[a] += shift;
+    for(int i = 0; i < n; i++)
+      out.mus[evalIdx[i]] += s2 * (r[i] / p - cR * (double)n * rb / (p * den));
+  }
+  double cUU = c0 - c0 * c0 * (double)n / den;
+  double cUE = cUU - c0 * s2 / den;
+  double cEE = cUU - 2.0 * c0 * s2 / den + s2 * s2 * cR / (p * den);
+  double vE = v0 - (c0 * c0 * (double)n / den + 2.0 * c0 * s2 / den
+                    + s2 * s2 * (1.0 / p - cR / (p * den)));
+  double vUd = v0 - c0 * c0 * (double)n / den;
+  double kapE = (vU + (double)n * varS) / den;
+  double kapU = (s2 + vU + (double)n * varS) / den;
+  out.b.resize(k);
+  out.vPriv.resize(k);
+  double VX;
+  double kappa;
+  if(n > 0 && cEE > 1e-18) {
+    VX = cEE;
+    kappa = kapE;
+    double cu = std::max(cUU, 0.0);
+    double bUnev = std::sqrt(cu / cEE);
+    double vPrivEv = std::max(vE - cEE, 0.0);
+    double vPrivUnev = std::max(vUd - cu, 0.0);
+    for(int a = 0; a < k; a++) {
+      out.b[a] = ev[a] ? 1.0 : bUnev;
+      out.vPriv[a] = ev[a] ? vPrivEv : vPrivUnev;
+    }
+  }
+  else if(cUU > 1e-18) {
+    VX = cUU;
+    kappa = kapU;
+    double vPrivEv = std::max(vE, 0.0);
+    double vPrivUnev = std::max(vUd - cUU, 0.0);
+    for(int a = 0; a < k; a++) {
+      out.b[a] = ev[a] ? 0.0 : 1.0;
+      out.vPriv[a] = ev[a] ? vPrivEv : vPrivUnev;
+    }
+  }
+  else {
+    VX = 0.0;
+    kappa = 0.0;
+    double vPrivEv = std::max(vE, 0.0);
+    double vPrivUnev = std::max(vUd, 0.0);
+    for(int a = 0; a < k; a++) {
+      out.b[a] = 0.0;
+      out.vPriv[a] = ev[a] ? vPrivEv : vPrivUnev;
+    }
+  }
+  kappa = std::min(std::max(kappa, 0.0), 1.0);
+  out.vX = VX;
+  out.kappaAlpha = kappa;
+  out.cEE = cEE;
+  out.cUU = cUU;
+  out.cUE = cUE;
+  out.vE = vE;
+  out.vU = vUd;
+  return out;
 }
 
 void BayesPosterior::nodePosteriorFromChildren(

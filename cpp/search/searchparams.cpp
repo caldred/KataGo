@@ -44,6 +44,7 @@ SearchParams::SearchParams()
    bayesSigmaDA(-5.991464547107982), //log(0.0025)
    bayesSigmaDB(0.0),
    bayesDefaultSigma(0.05),
+   bayesDMean(0.0),
    useGraphSearch(false),
    graphSearchRepBound(11),
    graphSearchCatchUpLeakProb(0.0),
@@ -171,6 +172,7 @@ bool SearchParams::operator==(const SearchParams& other) const {
     bayesSigmaDA == other.bayesSigmaDA &&
     bayesSigmaDB == other.bayesSigmaDB &&
     bayesDefaultSigma == other.bayesDefaultSigma &&
+    bayesDMean == other.bayesDMean &&
 
     useGraphSearch == other.useGraphSearch &&
     graphSearchRepBound == other.graphSearchRepBound &&
@@ -422,6 +424,7 @@ json SearchParams::changeableParametersToJson() const {
   ret["bayesSigmaDA"] = bayesSigmaDA;
   ret["bayesSigmaDB"] = bayesSigmaDB;
   ret["bayesDefaultSigma"] = bayesDefaultSigma;
+  ret["bayesDMean"] = bayesDMean;
 
   ret["useGraphSearch"] = useGraphSearch;
   ret["graphSearchRepBound"] = graphSearchRepBound;
@@ -576,6 +579,7 @@ void SearchParams::printParams(std::ostream& out) const {
   PRINTPARAM(bayesSigmaDA);
   PRINTPARAM(bayesSigmaDB);
   PRINTPARAM(bayesDefaultSigma);
+  PRINTPARAM(bayesDMean);
 
 
   PRINTPARAM(useGraphSearch);
