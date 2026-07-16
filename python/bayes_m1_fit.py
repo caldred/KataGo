@@ -76,6 +76,7 @@ def build(sets_):
             "r": r, "st": st,
             "spread2": float(np.var(deeps, ddof=1)),
             "dm_y": y, "dm_x": x,
+            "deeps": deeps, "mover": mover,
             "feat": features(rec),
             "k": len(r),
         })
@@ -197,6 +198,70 @@ def d_mean_report(rows, out, seed=13):
     return c
 
 
+# ---------- d-mean logit variant (gate doc Amendment B) ----------
+
+def _logit_pred_offsets(w, c_l):
+    """Value-space centered offsets from the logit model at the set's
+    mean-logit operating point (the anchor proxy available in-engine)."""
+    l = np.log(np.clip(w["deeps"], 0.01, 0.99) /
+               (1.0 - np.clip(w["deeps"], 0.01, 0.99)))
+    lbar = l.mean()
+    pred = 1.0 / (1.0 + np.exp(-(lbar + w["mover"] * c_l * w["dm_x"])))
+    return w["mover"] * (pred - pred.mean())
+
+
+def d_mean_logit_compare(rows, out, c_w, seed=19):
+    train = [w for w in rows if not w["held"]]
+    held = [w for w in rows if w["held"]]
+    if not train or not held or c_w is None:
+        out["d_mean_logit"] = "SKIPPED"
+        return None
+    # fit slope in centered mover-perspective logit space
+    num = den = 0.0
+    for w in train:
+        l = np.log(np.clip(w["deeps"], 0.01, 0.99) /
+                   (1.0 - np.clip(w["deeps"], 0.01, 0.99)))
+        yl = w["mover"] * (l - l.mean())
+        num += float(w["dm_x"] @ yl)
+        den += float(w["dm_x"] @ w["dm_x"])
+    c_l = num / max(den, 1e-18)
+    out["d_mean_logit_slope_train"] = c_l
+
+    sse_w = np.array([float(np.sum((w["dm_y"] - c_w * w["dm_x"]) ** 2))
+                      for w in held])
+    sse_l = np.array([float(np.sum((w["dm_y"] -
+                                    _logit_pred_offsets(w, c_l)) ** 2))
+                      for w in held])
+    sse_0 = np.array([float(np.sum(w["dm_y"] ** 2)) for w in held])
+    out["d_mean_logit_heldout_R2"] = 1.0 - float(sse_l.sum()) / \
+        max(float(sse_0.sum()), 1e-18)
+    rng = np.random.default_rng(seed)
+    n = len(held)
+    wins = 0
+    for _ in range(2000):
+        idx = rng.integers(0, n, n)
+        wins += float(sse_l[idx].sum()) < float(sse_w[idx].sum())
+    out["d_mean_logit_beats_winrate_frac"] = wins / 2000.0
+
+    # local value-space slope by |set mean deep - 0.5| tercile (all sets)
+    ext = np.array([abs(w["deeps"].mean() - 0.5) for w in rows])
+    cuts = np.quantile(ext, [1 / 3, 2 / 3])
+    by_terc = {}
+    for t, (lo, hi) in enumerate([(-1, cuts[0]), (cuts[0], cuts[1]),
+                                  (cuts[1], 2)]):
+        sel = [w for w, e in zip(rows, ext) if lo < e <= hi]
+        emp = _dm_slope(sel)
+        implied = float(np.mean([
+            np.mean(np.clip(w["deeps"], 0.01, 0.99) *
+                    (1 - np.clip(w["deeps"], 0.01, 0.99)))
+            for w in sel])) * c_l
+        by_terc[f"terc{t}"] = {"empirical": round(emp, 4),
+                               "logit_implied": round(implied, 4),
+                               "n": len(sel)}
+    out["d_mean_slope_by_extremeness"] = by_terc
+    return c_l
+
+
 # ---------- sigma_d ----------
 
 def _design(rows, names):
@@ -276,6 +341,14 @@ def main():
             w["spread2_resid"] = float(np.var(resid, ddof=1))
         sigma_d_report(rows, out, seed=17, target="spread2_resid",
                        label="sigma_d_resid")
+        # Amendment B: logit-space d-mean variant + its residual sigma_d
+        c_l = d_mean_logit_compare(rows, out, c)
+        if c_l is not None:
+            for w in rows:
+                resid = w["dm_y"] - _logit_pred_offsets(w, c_l)
+                w["spread2_resid_logit"] = float(np.var(resid, ddof=1))
+            sigma_d_report(rows, out, seed=23, target="spread2_resid_logit",
+                           label="sigma_d_resid_logit")
 
     print(json.dumps(out, indent=2))
     if args.json_out:

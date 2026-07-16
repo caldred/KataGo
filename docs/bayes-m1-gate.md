@@ -152,6 +152,49 @@ evals/s, batch size 1 — Eigen parallelism is across threads only).
   Held-out floor check: 0.2 x 280+ >= 56 > 50. Extension if needed = more
   games (never re-splitting), per the sanity floor above.
 
+## Amendment B (2026-07-13, registered AFTER the item-4 findings below —
+## a model-family comparison on the same data, decided before running it)
+
+Cal's specification question: the d-mean offset should plausibly live in
+LOGIT space (winrate is bounded; the same policy preference should move
+an even position more than a decided one; sigmoid keeps beliefs in
+[0,1]). Registered comparison, same data, no new extraction:
+
+- Logit variant: deep values clipped to [0.01, 0.99], logit, mover
+  perspective; within-set centered regression on centered log-priors;
+  predictions mapped back through the sigmoid at the set's mean-logit
+  operating point and re-centered, so both models are scored in VALUE
+  space (the space the engine consumes).
+- Decision metric (registered now): held-out value-space SSE, paired
+  bootstrap by set — adopt logit iff it beats the winrate-space fit in
+  >= 80% of resamples; otherwise keep winrate-space (simpler, already
+  passed its band). Tie-breaker diagnostics reported either way: local
+  slope by |set mean - 0.5| tercile (logit predicts the value-space
+  slope shrinks near extremes), and the residual-sigma_d calibration
+  refit under the logit head.
+- Honesty note: this follows the item-4 findings (slope/R^2 seen), so
+  it is a registered COMPARISON, not a pre-registration; the decision
+  rule above was fixed before the comparison ran.
+
+**Amendment B outcome (run same day): KEEP WINRATE-SPACE.** The logit
+variant is worse on every registered metric: held-out value-space R^2
+0.218 vs 0.260, beats-winrate in only 3.2% of paired resamples (needed
+>= 80%), and its residual-sigma_d calibration falls OUT of band
+(0.63-0.65 vs [0.7, 1.4]; log-residual sd 1.67 vs 1.03-1.11). The
+tercile diagnostic explains why: the empirical value-space slope is
+FLAT in |set mean - 0.5| (0.061 / 0.071 / 0.060 across terciles) where
+a constant logit slope implies 0.093 / 0.079 / 0.042 — on 9x9, the
+policy-preference effect on winrate does not attenuate near decided
+positions within the sampled range. The specification concern was
+reasonable; the data answers it. One consumption-time guard survives
+the concern: the engine should clip shrunken child means into
+[0.01, 0.99] (implementation guard, not a head change). Caveat
+recorded: parents were filtered to |raw - 0.5| <= 0.45, so very
+near-decided sets are underrepresented; if M3+ calibration probes show
+drift specifically at extreme positions, revisit with data sampled
+there. Full numbers: docs/bayes-m1-fit-report.json (v2 keys
+d_mean_logit_*, sigma_d_resid_logit_*).
+
 ## FINDINGS (2026-07-13, append-only; full report docs/bayes-m1-fit-report.json)
 
 Run: 278 sibling sets (310 sampled, 32 symHash-dedup/skip), 109 games,
