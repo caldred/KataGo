@@ -8,6 +8,7 @@
 #include "../core/test.h"
 #include "../dataio/sgf.h"
 #include "../search/searchnode.h"
+#include "../search/bayesnodestate.h"
 #include "../search/asyncbot.h"
 #include "../search/patternbonustable.h"
 #include "../program/setup.h"
@@ -94,6 +95,9 @@ static const vector<string> knownCommands = {
   //Display raw neural net evaluations
   "kata-raw-nn",
   "kata-raw-human-nn",
+
+  //Read out the Bayesian posterior root state of the last search (M2 gate probe)
+  "kata-bayes-root",
 
   //Misc other stuff
   "cputime",
@@ -3502,6 +3506,30 @@ int MainCmds::gtp(const vector<string>& args) {
           const bool useHumanModel = true;
           response = engine->rawNN(whichSymmetry, policyOptimism, useHumanModel);
         }
+      }
+    }
+
+    else if(command == "kata-bayes-root") {
+      //Read-only readout of the Bayesian posterior root state of the last
+      //search (useBayesSearch passenger, M2 gate probe). Triggers no search.
+      //NOTE: a played move (genmove/play) promotes a child to a fresh root
+      //copy whose bayesState is NULL, so this must be issued after a
+      //non-playing search command (kata-search) to read the searched root.
+      const Search* search = engine->bot->getSearchStopAndWait();
+      const SearchNode* root = search->rootNode;
+      if(root == NULL || root->bayesState == NULL)
+        response = "none";
+      else {
+        const BayesNodeState& bs = *root->bayesState;
+        double sd = sqrt(std::max(bs.b * bs.b * bs.vsOwn + bs.vPriv, 0.0));
+        int64_t rootVisits = root->stats.visits.load(std::memory_order_acquire);
+        ostringstream out;
+        out << "mu " << Global::doubleToString(bs.mu)
+            << " sd " << Global::doubleToString(sd)
+            << " vsKids " << Global::doubleToString(bs.vsKids)
+            << " resolvable " << Global::doubleToString(bs.resolvable)
+            << " visits " << rootVisits;
+        response = out.str();
       }
     }
 

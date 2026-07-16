@@ -47,6 +47,9 @@ namespace Tests {
   //testbayes.cpp
   void runBayesTests();
 
+  //testbayessearch.cpp
+  void runBayesSearchTests();
+
   //testsearchnonn.cpp
   void runNNLessSearchTests();
   //testsearch.cpp
