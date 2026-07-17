@@ -26,6 +26,12 @@
 //the shared homogeneous v_u (their values are exact; conservative);
 //tree reuse keeps anchors frozen in a previous search's state; noResult
 //mass is ignored (tromp-taylor).
+//
+//M2 gate outcome (docs/bayes-m2-gate.md): Gate A PASS; Gate B
+//FAIL-attributed — the location drift vs a deep reference is dominated by
+//the net's own shallow-vs-deep opening bias (stock PUCT drifts MORE at
+//matched evals) plus the tracked adaptive-selection residual
+//(+0.14..+0.22 z, round-3 testbed range). Spread claims calibrated.
 
 #include "../search/search.h"
 #include "../search/searchnode.h"
