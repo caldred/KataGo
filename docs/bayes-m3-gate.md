@@ -89,6 +89,47 @@ mover drift -0.001). **B=30: FAIL both as scored — attributed:**
 No optimism anywhere; no coefficient moved. Calibration story written
 = Gate 2 may proceed per the order of operations below.
 
+## Gate 2, cell B=64, FIRST RUN (2026-07-17): FAIL — attributed to an
+## unported piece of the stack, protocol amended below (append-only)
+
+Result as scored: 295 completed games, bayes 3 wins / 175 losses / 117
+draws = 20.9% +- 2.4% score, **-232 +- 25 Elo, p ~ 0. FAIL.** SGFs +
+log: bayes-data/match64/ (first run).
+
+Attribution (in order run):
+1. Suspect "final move = visit-argmax is wrong under KG": KILLED for
+   the deterministic case — on 60 stored positions at B=64, the
+   visit-based choice matched the 1500-visit reference 73% vs
+   argmax-posterior-mu 65% (n.s. difference, 72% mutual agreement).
+2. Games are mechanically sound (colors 149/148, ~54 moves, resignation
+   correct — bayes evaluates its lost endgames at 0.01 and resigns).
+   Bayes simply falls behind in the early/middle game.
+3. **Confirmed cause: the visit-TEMPERATURE sampler x KG's flat visit
+   distribution.** Measured at the empty board, B=64: bayes root visits
+   are near-uniform (top share ~0.14 across 9 arms; PUCT concentrates
+   0.4-0.7). The search's own values are right (it scores the good
+   quartet 0.47 vs 0.41 for the rest) — but match play sampled from
+   VISITS with chosenMoveTemperatureEarly = 0.60, i.e. roughly a
+   quarter of early moves were exploration arms the search itself
+   rated ~6 winrate points worse. KG spends visits by information, not
+   preference; every consumer of "visits ~= preference" breaks. The
+   final-move rule of the validated stack (bmcts recommend():
+   deterministic argmax posterior mean, mover perspective) was never
+   ported — an implementation omission of the same kind as Gate A's
+   fix-and-rerun class, not a tuning response to match results.
+
+**Amended protocol for the rerun (registered BEFORE the rerun):**
+- The bayes bot's chosen move = argmax mover-perspective posterior mu
+  over the root set (the bmcts recommend() rule), deterministic
+  (implemented in getChosenMoveLoc behind useBayesSelection).
+- Both bots run chosenMoveTemperature = 0 and
+  chosenMoveTemperatureEarly = 0 (PUCT at temp 0 = its standard
+  strongest play, so this amendment cannot flatter the bayes side).
+  Opening diversity comes from the policy-initialized openings alone.
+- Everything else identical; N = 300, one look, same decision rule.
+  The first-run result stands in the record as the outcome of the
+  unamended protocol.
+
 ## Order of operations (fixed)
 
 1. Implement + model-free checks (invariants still green with

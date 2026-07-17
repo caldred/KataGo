@@ -3543,6 +3543,18 @@ int MainCmds::gtp(const vector<string>& args) {
                 break;
               }
             }
+            //M3 match-gate attribution: the bmcts final-choice rule is
+            //argmax posterior mean in MOVER perspective (recommend(),
+            //algorithms.py) — report it alongside the visit-based choice.
+            double moverSign = (root->nextPla == P_WHITE) ? 1.0 : -1.0;
+            int jBest = -1;
+            double best = -1e300;
+            for(int j = 0; j < ss.k; j++) {
+              double v = moverSign * ss.mu[j];
+              if(v > best) { best = v; jBest = j; }
+            }
+            if(jBest >= 0)
+              out << " muBest " << Location::toString(ss.moveLoc[jBest], engine->bot->getRootBoard());
           }
         }
         response = out.str();

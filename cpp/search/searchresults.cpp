@@ -5,6 +5,8 @@
 
 #include "../search/search.h"
 
+#include "../search/bayesnodestate.h"
+
 #include <cinttypes>
 
 #include "../program/playutils.h"
@@ -572,6 +574,27 @@ const SearchNode* Search::getChildForMove(const SearchNode* node, Loc moveLoc) c
 Loc Search::getChosenMoveLoc() {
   if(rootNode == NULL)
     return Board::NULL_LOC;
+
+  //Bayes stack final-move rule (M3 match-gate attribution, docs/bayes-m3-gate.md):
+  //the validated bmcts recommendation is deterministic argmax posterior mean in
+  //mover perspective (recommend(), algorithms.py). The visit-temperature sampler
+  //below assumes PUCT visit semantics; under KG routing visits track information,
+  //not preference (measured: near-uniform root visits on the empty board), so
+  //sampling by visits plays exploration moves. Root avoid/hint filters are not
+  //consulted here (unused in match/gtp defaults; entries are policy-legal).
+  if(searchParams.useBayesSelection && rootNode->bayesState != NULL
+     && rootNode->bayesState->anchorFrozen) {
+    BayesSetState ss;
+    if(bayesComputeSetState(*rootNode, ss) && ss.k > 0) {
+      double moverSign = (rootNode->nextPla == P_WHITE) ? 1.0 : -1.0;
+      int jBest = 0;
+      for(int j = 1; j < ss.k; j++) {
+        if(moverSign * ss.mu[j] > moverSign * ss.mu[jBest])
+          jBest = j;
+      }
+      return ss.moveLoc[jBest];
+    }
+  }
 
   vector<Loc> locs;
   vector<double> playSelectionValues;
