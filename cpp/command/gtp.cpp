@@ -3515,7 +3515,10 @@ int MainCmds::gtp(const vector<string>& args) {
       //NOTE: a played move (genmove/play) promotes a child to a fresh root
       //copy whose bayesState is NULL, so this must be issued after a
       //non-playing search command (kata-search) to read the searched root.
-      const Search* search = engine->bot->getSearchStopAndWait();
+      //M3 gate-1 readout: also reports the chosen move (getChosenMoveLoc)
+      //and pBest, the root-set p_argmax weight w of that move (set state
+      //recomputed read-only at handler time; single-threaded by contract).
+      Search* search = engine->bot->getSearchStopAndWait();
       const SearchNode* root = search->rootNode;
       if(root == NULL || root->bayesState == NULL)
         response = "none";
@@ -3529,6 +3532,19 @@ int MainCmds::gtp(const vector<string>& args) {
             << " vsKids " << Global::doubleToString(bs.vsKids)
             << " resolvable " << Global::doubleToString(bs.resolvable)
             << " visits " << rootVisits;
+        Loc chosenLoc = search->getChosenMoveLoc();
+        if(chosenLoc != Board::NULL_LOC) {
+          BayesSetState ss;
+          if(search->bayesComputeSetState(*root, ss)) {
+            for(int j = 0; j < ss.k; j++) {
+              if(ss.moveLoc[j] == chosenLoc) {
+                out << " move " << Location::toString(chosenLoc, engine->bot->getRootBoard())
+                    << " pBest " << Global::doubleToString(ss.w[j]);
+                break;
+              }
+            }
+          }
+        }
         response = out.str();
       }
     }

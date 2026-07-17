@@ -38,6 +38,7 @@ struct SubtreeValueBiasTable;
 struct SearchNodeTable;
 struct SearchNodeChildrenReference;
 struct ConstSearchNodeChildrenReference;
+struct BayesSetState;
 
 //Per-thread state
 struct SearchThread {
@@ -616,9 +617,19 @@ private:
   void updateStatsAfterPlayout(SearchNode& node, SearchThread& thread, bool isRoot);
   void recomputeNodeStats(SearchNode& node, SearchThread& thread, int32_t numVisitsToAdd, bool isRoot);
 
-  //bayessearch.cpp (useBayesSearch posterior side state, M2)
+  //bayessearch.cpp (useBayesSearch posterior side state, M2; selection fork, M3)
   void bayesRecomputeNodeStats(SearchNode& node, bool isRoot);
   double bayesSigmaFromStErr(double stErrWinrate) const;
+public:
+  //Read-only children-set posterior snapshot; public for the kata-bayes-root
+  //GTP readout (single-threaded, after search).
+  bool bayesComputeSetState(const SearchNode& node, BayesSetState& out) const;
+private:
+  void bayesSelectBestChildToDescend(
+    SearchThread& thread, const SearchNode& node, SearchNodeState nodeState,
+    int& numChildrenFound, int& bestChildIdx, Loc& bestChildMoveLoc, bool& countEdgeVisit,
+    bool isRoot
+  ) const;
 
   void downweightBadChildrenAndNormalizeWeight(
     int numChildren,

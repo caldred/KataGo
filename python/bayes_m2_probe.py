@@ -269,13 +269,19 @@ def parse_bayes_root(resp):
     for key in ("mu", "sd", "vsKids", "resolvable", "visits"):
         if key not in d:
             raise RuntimeError(f"missing {key!r} in kata-bayes-root response: {resp!r}")
-    return {
+    out = {
         "mu": float(d["mu"]),
         "sd": float(d["sd"]),
         "vsKids": float(d["vsKids"]),
         "resolvable": float(d["resolvable"]),
         "visits": int(d["visits"]),
     }
+    #M3 extension (docs/bayes-m3-gate.md Gate 1): chosen move + claimed P(best)
+    if "move" in d:
+        out["move"] = d["move"]
+    if "pBest" in d:
+        out["pBest"] = float(d["pBest"])
+    return out
 
 
 def measure_positions(katago, gtp_config, model, bayes_overrides, positions, b_visits):

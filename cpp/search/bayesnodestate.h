@@ -1,8 +1,15 @@
 #ifndef SEARCH_BAYESNODESTATE_H_
 #define SEARCH_BAYESNODESTATE_H_
 
+#include <vector>
+
+#include "../game/board.h"
+#include "../search/bayesposterior.h"
+
 //Per-node side state for the Bayesian posterior search (useBayesSearch).
 //M2: a pure passenger audited by gates — selection still reads normal stats.
+//M3 adds the voi-KG routing currency (dKids/dBackup) consumed by the
+//selection fork (useBayesSelection).
 //All values are WHITE-PERSPECTIVE WINRATE units in [0,1] (the M1 heads were
 //fitted in that space); variances are winrate^2.
 //
@@ -38,9 +45,53 @@ struct BayesNodeState {
   double betaKids = 0.0;
   //Resolvable-variance backup (sum_i w_i R_i); leaf/terminal children 0
   double resolvable = 0.0;
+  //One-reveal drop of this node's children-set at the current |E| (the KG
+  //routing currency D for its unevaluated children; bmcts _reveal_drop)
+  double dKids = 0.0;
+  //KG backup: max_i w_i * D_i over this node's children-set
+  //(bmcts _recompute_seq node.D — MAX, not sum)
+  double dBackup = 0.0;
   //Diagnostics: own first eval (winrate) and its corrected sd
   double mu0 = 0.0;
   double sigma0 = 0.0;
+};
+
+struct SearchNode;
+
+//Snapshot of a node's children-set posterior computation (the shared middle
+//of bayesRecomputeNodeStats: policy-set building through
+//nodePosteriorFromChildren), computed read-only by
+//Search::bayesComputeSetState so that both the backup and the M3 selection
+//fork consume the identical set state. One entry per legal move of the node,
+//in descending-prior order (stable under prior ties).
+struct BayesSetState {
+  //Per-entry vectors, all length k
+  std::vector<int> pos;                    //policy index
+  std::vector<Loc> moveLoc;                //board location of the move
+  std::vector<double> prior;               //policy prior (floored at 1e-12)
+  std::vector<const SearchNode*> child;    //allocated child node, if any
+  std::vector<bool> evaled;                //has an eval (own NN output, or terminal value)
+  std::vector<bool> terminalEvaled;        //evaled via exact terminal value (no NN output)
+  std::vector<double> evalWinrate;         //valid iff evaled
+  std::vector<double> evalStErr;           //0.5*shorttermWinlossError, 0 if unavailable
+  std::vector<double> mu;                  //assembled per-entry posterior mean (clipped)
+  std::vector<double> vPriv;               //assembled per-entry private variance
+  std::vector<double> b;                   //assembled per-entry shared-loading
+  std::vector<double> R;                   //per-entry resolvable variance
+  std::vector<double> D;                   //per-entry one-reveal KG currency
+  //Scalars
+  double vX = 0.0;                         //set shared variance (Stein V_X)
+  double kappaAlpha = 0.0;                 //Stein anchor gain
+  int n = 0;                               //number of evaled entries
+  int k = 0;                               //number of entries (legal moves)
+  double mKids = 0.0;                      //E[max/min] over the set
+  double vKidsPriv = 0.0;                  //private variance of the max
+  double bOut = 0.0;                       //max's loading on the set shared variable
+  std::vector<double> w;                   //P(entry attains the max/min), length k
+  double dKids = 0.0;                      //one-reveal drop at current |E| (bmcts _reveal_drop)
+  double dBackup = 0.0;                    //max_j w_j * D_j (bmcts _recompute_seq node.D)
+  //Raw Stein posterior over the set (the backup's freeze step consumes it)
+  BayesPosterior::SteinShrink stein;
 };
 
 #endif

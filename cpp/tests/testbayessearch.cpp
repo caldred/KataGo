@@ -20,11 +20,18 @@ using namespace TestSearchCommon;
 //    freeze-by-next-parent-recompute contract.
 //A2: terminal-dominance minimax agreement on decided 5x5 endgames.
 //A3 (reported, not gated): bayes root mu vs ordinary search winrate.
+//
+//M3 (docs/bayes-m3-gate.md, order-of-operations step 1): the A1 battery is
+//rerun with useBayesSelection = true (voi-KG selection fork); the same
+//invariants must hold, every completed search must visit >= 2 distinct root
+//children (selection isn't degenerate), and a stub-NN mini-match smoke
+//(bayes-selection vs PUCT, one 5x5 game to move 10) must complete.
 
-static SearchParams makeBayesTestParams(int64_t maxVisits) {
+static SearchParams makeBayesTestParams(int64_t maxVisits, bool useBayesSelection = false) {
   SearchParams params;
   params.maxVisits = maxVisits;
   params.useBayesSearch = true;
+  params.useBayesSelection = useBayesSelection;
   params.numThreads = 1;
   params.useGraphSearch = false;
   params.useUncertainty = false;
@@ -71,6 +78,10 @@ static void walkAndCheckBayes(const Search* search, const SearchNode* node, cons
     testAssert(std::isfinite(bs->resolvable));
     testAssert(bs->mu >= 0.01 && bs->mu <= 0.99);
     testAssert(bs->resolvable >= 0.0);
+    testAssert(std::isfinite(bs->dKids));
+    testAssert(std::isfinite(bs->dBackup));
+    testAssert(bs->dKids >= 0.0);
+    testAssert(bs->dBackup >= 0.0);
     if(bs->anchorFrozen) {
       ws.numFrozen++;
       testAssert(node->getNNOutput() != NULL || node == search->rootNode);
@@ -109,11 +120,14 @@ static double whiteWinrateOf(const Search* search) {
 }
 
 //Run one A1 search on the given position, walk the tree, print the A3 line.
+//With useBayesSelection also assert the search visited >= 2 distinct root
+//children (the M3 selection fork isn't degenerate).
 static void runA1Case(
   NNEvaluator* nnEval, Logger& logger, const string& label, const string& searchSeed,
-  int64_t maxVisits, const Board& board, const BoardHistory& hist, Player nextPla
+  int64_t maxVisits, const Board& board, const BoardHistory& hist, Player nextPla,
+  bool useBayesSelection = false
 ) {
-  SearchParams params = makeBayesTestParams(maxVisits);
+  SearchParams params = makeBayesTestParams(maxVisits, useBayesSelection);
   Search* search = new Search(params, nnEval, &logger, searchSeed);
   search->setPosition(nextPla, board, hist);
   search->runWholeSearch(nextPla);
@@ -125,15 +139,31 @@ static void runA1Case(
   walkAndCheckBayes(search, search->rootNode, board, ws);
   testAssert(ws.numNodesWithState > 0);
 
+  int numRootChildrenVisited = 0;
+  {
+    ConstSearchNodeChildrenReference children = search->rootNode->getChildren();
+    int childrenCapacity = children.getCapacity();
+    for(int i = 0; i < childrenCapacity; i++) {
+      const SearchNode* child = children[i].getIfAllocated();
+      if(child == NULL)
+        break;
+      if(children[i].getEdgeVisits() > 0)
+        numRootChildrenVisited++;
+    }
+  }
+  if(useBayesSelection)
+    testAssert(numRootChildrenVisited >= 2);
+
   double bayesMu = search->rootNode->bayesState->mu;
   double searchWinrate = whiteWinrateOf(search);
-  cout << "A3 root: " << label
+  cout << (useBayesSelection ? "A3 root (sel): " : "A3 root: ") << label
        << " bayesMu=" << Global::strprintf("%.4f", bayesMu)
        << " searchWinrate=" << Global::strprintf("%.4f", searchWinrate)
        << " diff=" << Global::strprintf("%+.4f", bayesMu - searchWinrate)
        << " (bayesNodes=" << ws.numNodesWithState
        << " frozen=" << ws.numFrozen
-       << " unfrozenEvaledChildren=" << ws.numUnfrozenEvaledChildren << ")"
+       << " unfrozenEvaledChildren=" << ws.numUnfrozenEvaledChildren
+       << " rootChildrenVisited=" << numRootChildrenVisited << ")"
        << endl;
   delete search;
 }
@@ -235,37 +265,91 @@ void Tests::runBayesSearchTests() {
 
   //-------------------------------------------------------------------------
   //A1 + A3: invariants at maxVisits {20,80,300} on 5x5 and 7x7, empty board
-  //and mid-game, 2 rng seeds.
+  //and mid-game, 2 rng seeds. Run once with the M2 passenger state only and
+  //once with the M3 voi-KG selection fork on (same invariants must hold,
+  //plus the >= 2 distinct visited root children non-degeneracy check).
   //-------------------------------------------------------------------------
   const vector<string> nnSeeds = {"bayesGateSeedA", "bayesGateSeedB"};
   const vector<int64_t> visitSchedule = {20, 80, 300};
-  for(const string& nnSeed: nnSeeds) {
-    NNEvaluator* nnEval = startNNEval(
-      modelFile, logger, nnSeed, NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
-      0, true, false, false, true, false);
-    for(int size: {5, 7}) {
-      Rules rules = Rules::getTrompTaylorish();
-      //Empty board
-      for(int64_t maxVisits: visitSchedule) {
-        Board board(size, size);
-        BoardHistory hist(board, P_BLACK, rules, 0);
-        string label = Global::strprintf("%s %dx%d empty v=%d", nnSeed.c_str(), size, size, (int)maxVisits);
-        runA1Case(nnEval, logger, label, "bayesA1" + nnSeed + Global::intToString(size) + "e" + Global::int64ToString(maxVisits),
-                  maxVisits, board, hist, P_BLACK);
-      }
-      //Mid-game position: ~8 stub moves from empty
-      {
-        Board board(size, size);
-        BoardHistory hist(board, P_BLACK, rules, 0);
-        Player pla = P_BLACK;
-        makeMidGamePosition(nnEval, logger, "bayesMid" + nnSeed + Global::intToString(size), rules, board, hist, pla);
+  for(bool useBayesSelection: {false, true}) {
+    const string selTag = useBayesSelection ? "sel" : "";
+    for(const string& nnSeed: nnSeeds) {
+      NNEvaluator* nnEval = startNNEval(
+        modelFile, logger, nnSeed, NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
+        0, true, false, false, true, false);
+      for(int size: {5, 7}) {
+        Rules rules = Rules::getTrompTaylorish();
+        //Empty board
         for(int64_t maxVisits: visitSchedule) {
-          string label = Global::strprintf("%s %dx%d midgame v=%d", nnSeed.c_str(), size, size, (int)maxVisits);
-          runA1Case(nnEval, logger, label, "bayesA1" + nnSeed + Global::intToString(size) + "m" + Global::int64ToString(maxVisits),
-                    maxVisits, board, hist, pla);
+          Board board(size, size);
+          BoardHistory hist(board, P_BLACK, rules, 0);
+          string label = Global::strprintf("%s %dx%d empty v=%d", nnSeed.c_str(), size, size, (int)maxVisits);
+          runA1Case(nnEval, logger, label, "bayesA1" + selTag + nnSeed + Global::intToString(size) + "e" + Global::int64ToString(maxVisits),
+                    maxVisits, board, hist, P_BLACK, useBayesSelection);
+        }
+        //Mid-game position: ~8 stub moves from empty
+        {
+          Board board(size, size);
+          BoardHistory hist(board, P_BLACK, rules, 0);
+          Player pla = P_BLACK;
+          makeMidGamePosition(nnEval, logger, "bayesMid" + nnSeed + Global::intToString(size), rules, board, hist, pla);
+          for(int64_t maxVisits: visitSchedule) {
+            string label = Global::strprintf("%s %dx%d midgame v=%d", nnSeed.c_str(), size, size, (int)maxVisits);
+            runA1Case(nnEval, logger, label, "bayesA1" + selTag + nnSeed + Global::intToString(size) + "m" + Global::int64ToString(maxVisits),
+                      maxVisits, board, hist, pla, useBayesSelection);
+          }
         }
       }
+      delete nnEval;
     }
+  }
+
+  //-------------------------------------------------------------------------
+  //M3 mini-match smoke: one 5x5 stub-NN game to move 10, alternating between
+  //a bayes-selection search (black) and a stock PUCT search (white). No
+  //assertions beyond completion, legality, and the A1 invariants on the
+  //bayes engine's searches.
+  //-------------------------------------------------------------------------
+  {
+    NNEvaluator* nnEval = startNNEval(
+      modelFile, logger, "bayesM3MatchSeed", NNPos::MAX_BOARD_LEN, NNPos::MAX_BOARD_LEN,
+      0, true, false, false, true, false);
+    Rules rules = Rules::getTrompTaylorish();
+    Board board(5, 5);
+    BoardHistory hist(board, P_BLACK, rules, 0);
+    Player pla = P_BLACK;
+
+    SearchParams bayesParams = makeBayesTestParams(30, true);
+    Search* bayesSearch = new Search(bayesParams, nnEval, &logger, "bayesM3MatchBayes");
+    SearchParams puctParams;
+    puctParams.maxVisits = 30;
+    puctParams.numThreads = 1;
+    puctParams.useGraphSearch = false;
+    Search* puctSearch = new Search(puctParams, nnEval, &logger, "bayesM3MatchPuct");
+
+    int numMoves = 0;
+    for(int i = 0; i < 10; i++) {
+      Search* search = (pla == P_BLACK) ? bayesSearch : puctSearch;
+      search->setPosition(pla, board, hist);
+      Loc moveLoc = search->runWholeSearchAndGetMove(pla);
+      testAssert(moveLoc != Board::NULL_LOC);
+      if(search == bayesSearch) {
+        testAssert(search->rootNode != NULL);
+        BayesWalkStats ws;
+        walkAndCheckBayes(search, search->rootNode, board, ws);
+        testAssert(ws.numNodesWithState > 0);
+      }
+      bool suc = hist.makeBoardMoveTolerant(board, moveLoc, pla);
+      testAssert(suc);
+      numMoves++;
+      pla = getOpp(pla);
+      if(hist.isGameFinished)
+        break;
+    }
+    cout << "M3 mini-match smoke: completed " << numMoves << " moves"
+         << (hist.isGameFinished ? " (game finished)" : "") << endl;
+    delete bayesSearch;
+    delete puctSearch;
     delete nnEval;
   }
 

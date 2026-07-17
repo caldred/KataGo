@@ -1,5 +1,6 @@
 #include "../search/search.h"
 
+#include "../search/bayesnodestate.h"
 #include "../search/searchnode.h"
 
 //------------------------
@@ -327,6 +328,16 @@ void Search::selectBestChildToDescend(
   bool isRoot) const
 {
   assert(thread.pla == node.nextPla);
+
+  //M3 Bayesian voi-KG selection fork (docs/bayes-m3-gate.md). Early playouts
+  //before the node's bayes anchor exists (e.g. the root before its first
+  //recompute) fall through cleanly to the PUCT code below.
+  if(searchParams.useBayesSelection) {
+    if(node.getNNOutput() != NULL && node.bayesState != NULL && node.bayesState->anchorFrozen) {
+      bayesSelectBestChildToDescend(thread,node,nodeState,numChildrenFound,bestChildIdx,bestChildMoveLoc,countEdgeVisit,isRoot);
+      return;
+    }
+  }
 
   double maxSelectionValue = POLICY_ILLEGAL_SELECTION_VALUE;
   bestChildIdx = -1;

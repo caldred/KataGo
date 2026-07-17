@@ -38,6 +38,7 @@ SearchParams::SearchParams()
    uncertaintyExponent(1.0),
    uncertaintyMaxWeight(8.0),
    useBayesSearch(false),
+   useBayesSelection(false),
    bayesRho(0.0),
    bayesSigmaA(0.0),
    bayesSigmaB(1.0),
@@ -166,6 +167,7 @@ bool SearchParams::operator==(const SearchParams& other) const {
     uncertaintyMaxWeight == other.uncertaintyMaxWeight &&
 
     useBayesSearch == other.useBayesSearch &&
+    useBayesSelection == other.useBayesSelection &&
     bayesRho == other.bayesRho &&
     bayesSigmaA == other.bayesSigmaA &&
     bayesSigmaB == other.bayesSigmaB &&
@@ -418,6 +420,7 @@ json SearchParams::changeableParametersToJson() const {
   ret["uncertaintyMaxWeight"] = uncertaintyMaxWeight;
 
   ret["useBayesSearch"] = useBayesSearch;
+  ret["useBayesSelection"] = useBayesSelection;
   ret["bayesRho"] = bayesRho;
   ret["bayesSigmaA"] = bayesSigmaA;
   ret["bayesSigmaB"] = bayesSigmaB;
@@ -573,6 +576,7 @@ void SearchParams::printParams(std::ostream& out) const {
   PRINTPARAM(uncertaintyMaxWeight);
 
   PRINTPARAM(useBayesSearch);
+  PRINTPARAM(useBayesSelection);
   PRINTPARAM(bayesRho);
   PRINTPARAM(bayesSigmaA);
   PRINTPARAM(bayesSigmaB);

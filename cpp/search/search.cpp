@@ -623,6 +623,8 @@ void Search::beginSearch(bool pondering) {
     if(searchParams.useUncertainty)
       throw StringError("useBayesSearch requires useUncertainty = false (the shortterm-error head is consumed as posterior variance; uncertainty-weighting would double-count it)");
   }
+  if(searchParams.useBayesSelection && !searchParams.useBayesSearch)
+    throw StringError("useBayesSelection requires useBayesSearch (the voi-KG scores are computed from the Bayesian posterior side state)");
 
   rootBoard.checkConsistency();
 
