@@ -64,7 +64,9 @@ def gen_positions(eng, seed_base, games, max_positions, want_ref_move):
 
 
 def add_refs(eng, positions, budgets, ref_visits, want_budget_values):
-    for p in positions:
+    from concurrent.futures import ThreadPoolExecutor
+
+    def one(p):
         resp = eng.query({"moves": p["moves"], "rules": "tromp-taylor",
                           "komi": 7.0, "boardXSize": 9, "boardYSize": 9,
                           "maxVisits": ref_visits})
@@ -78,6 +80,9 @@ def add_refs(eng, positions, budgets, ref_visits, want_budget_values):
                                 "maxVisits": b})
                 p[f"wr{b}"] = r2["rootInfo"]["winrate"]
 
+    with ThreadPoolExecutor(16) as pool:
+        list(pool.map(one, positions))
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -90,20 +95,32 @@ def main():
     ap.add_argument("--games", type=int, default=30)
     ap.add_argument("--max-positions", type=int, default=60)
     ap.add_argument("--budgets", default="30,100")
+    ap.add_argument("--paired-seed", type=int, default=None,
+                    help="attribution mode: ONE batch at this seed base, "
+                         "control values on the SAME positions (paired)")
     args = ap.parse_args()
     budgets = [int(x) for x in args.budgets.split(",")]
 
     out = open(args.out, "a", buffering=1)
     eng = AnalysisEngine(args.katago, args.analysis_config, args.model)
     try:
-        print("phase 1: bayes-batch positions + refs", file=sys.stderr)
-        bpos = gen_positions(eng, 500200, args.games, args.max_positions, True)
-        add_refs(eng, bpos, budgets, 1500, want_budget_values=False)
-        print(f"  {len(bpos)} positions", file=sys.stderr)
-        print("phase 3 prep: control batch", file=sys.stderr)
-        cpos = gen_positions(eng, 500300, args.games, args.max_positions, False)
-        add_refs(eng, cpos, budgets, 1500, want_budget_values=True)
-        print(f"  {len(cpos)} control positions", file=sys.stderr)
+        if args.paired_seed is not None:
+            print(f"PAIRED attribution mode, seed {args.paired_seed}",
+                  file=sys.stderr)
+            bpos = gen_positions(eng, args.paired_seed, args.games,
+                                 args.max_positions, True)
+            add_refs(eng, bpos, budgets, 1500, want_budget_values=True)
+            cpos = bpos
+            print(f"  {len(bpos)} paired positions", file=sys.stderr)
+        else:
+            print("phase 1: bayes-batch positions + refs", file=sys.stderr)
+            bpos = gen_positions(eng, 500200, args.games, args.max_positions, True)
+            add_refs(eng, bpos, budgets, 1500, want_budget_values=False)
+            print(f"  {len(bpos)} positions", file=sys.stderr)
+            print("phase 3 prep: control batch", file=sys.stderr)
+            cpos = gen_positions(eng, 500300, args.games, args.max_positions, False)
+            add_refs(eng, cpos, budgets, 1500, want_budget_values=True)
+            print(f"  {len(cpos)} control positions", file=sys.stderr)
     finally:
         eng.close()
 
@@ -126,6 +143,9 @@ def main():
                 rec = {**{k: p[k] for k in ("game_id", "move_num", "pla",
                                             "ref", "ref_best")},
                        "B": b, **ro}
+                if args.paired_seed is not None:
+                    rec["wr_control"] = p[f"wr{b}"]
+                    rec["moves"] = p["moves"]
                 results[b].append(rec)
                 out.write(json.dumps(rec) + "\n")
         finally:
@@ -143,7 +163,15 @@ def main():
                         for p in cpos])
         dw_b = st.mean([r["mu"] - r["ref"] for r in rows])
         dw_c = st.mean([p[f"wr{b}"] - p["ref"] for p in cpos])
+        paired_stats = None
+        if args.paired_seed is not None:
+            pd = [((r["mu"] - r["ref"]) - (r["wr_control"] - r["ref"]))
+                  * (1 if r["pla"] == "W" else -1) for r in rows]
+            paired_stats = {"paired_mover_diff_mean": st.mean(pd),
+                            "paired_mover_diff_se":
+                                st.stdev(pd) / (len(pd) ** 0.5)}
         summary[f"B{b}"] = {
+            **(paired_stats or {}),
             "n": len(rows),
             "mean_claimed_pBest": st.mean(claimed) if claimed else None,
             "empirical_match_rate": st.mean(hit),

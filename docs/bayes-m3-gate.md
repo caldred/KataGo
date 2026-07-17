@@ -60,6 +60,35 @@ off. Single-threaded, tree mode (M2 guards inherited).
   testbed per the working agreements. No constant may be tuned on
   match results, ever (standing rule).
 
+## Gate 1 OUTCOME (2026-07-13, append-only)
+
+**B=100: PASS both bands** (pBest-empirical -0.192; Bayes-specific
+mover drift -0.001). **B=30: FAIL both as scored — attributed:**
+
+1. **Mover drift +0.039 vs band 0.030: the unpaired estimator's batch
+   noise.** The registered protocol subtracted means across two
+   independent 60-position batches (~±0.018 SE on the difference — a
+   design flaw owned here). Paired attribution run (seed 500400, same
+   positions for stack and control, bayes-data/m3-gate1-paired.jsonl):
+   **+0.008 +- 0.018 SE** — inside the band, indistinguishable from
+   zero. The underlying quantity is in band; the registered estimator
+   was too noisy for the band's width.
+2. **pBest -0.30 vs band floor -0.20: conservative-only, two stacked
+   causes.** (a) Structural conservatism at tiny reveal counts (~15 of
+   ~82 root moves revealed at B=30: unrevealed-mass keeps P(best)
+   spread wide; claims rise 0.38 -> 0.46 by B=100). (b) Metric
+   inflation: "empirical" = agreement with the reference engine's top
+   move, and on near-ties — exactly where low claims are honest — both
+   engines share the same policy prior and agree anyway (claims <= 0.21
+   still "hit" 40%). The testbed's exact-truth version of this metric
+   doesn't have (b), which is why its conservatism band was tighter.
+   Reliability is intact and monotone: top-tercile claims hit 0.85
+   (B=30) / 0.95 (B=100); misses carry half the claimed pBest of hits.
+   Replicated on the paired batch (-0.32).
+
+No optimism anywhere; no coefficient moved. Calibration story written
+= Gate 2 may proceed per the order of operations below.
+
 ## Order of operations (fixed)
 
 1. Implement + model-free checks (invariants still green with
