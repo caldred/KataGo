@@ -130,6 +130,54 @@ Attribution (in order run):
   The first-run result stands in the record as the outcome of the
   unamended protocol.
 
+## Gate 2, cell B=64, AMENDED RERUN (2026-07-17): FAIL, worse — the
+## chooser was not the disease. Cell sequence STOPPED. (append-only)
+
+Amended-protocol result: 300 games, bayes 8/243/49 = 10.8% +- 1.8%,
+**-366 +- 32 Elo.** Argmax-posterior play scored LOWER than
+visit-temperature play (20.9% -> 10.8%; part of the delta is temp-0
+strengthening PUCT, not all). SGFs: bayes-data/match64-rerun/.
+
+Attribution status: OPEN, with a strong lead and several killed
+suspects.
+
+Killed: temperature-x-flat-visits as dominant cause (fixing it made
+things worse); tree depth (bayes PVs reach 10-11 plies at ~200 visits;
+not breadth-degenerate); game mechanics (resignation, colors, lengths
+all clean — bayes evaluates its lost positions correctly and resigns).
+
+**Lead: winner's curse at the argmax-over-k~82 choosing layer.**
+Caught directly on the empty board: argmax-mu played F5 (policy prior
+0.027, search's own visit-weighted stats rank it WORST of the top
+arms, mover winrate 0.421 vs E5 0.434) because its posterior mean came
+out top across 82 root beliefs, most resting on 1-2 evals each. The
+max of many thin-evidence posteriors is systematically the arm whose
+noise broke optimistic — the mover-side selection residual measured at
++0.14..+0.22 z on the RECOMMENDED move is the mild average form; the
+argmax ACROSS arms selects the extreme form. The bmcts testbed never
+faced this regime: k = 4-20 with ALL siblings evaluated at expansion
+vs k ~ 82 with sequential reveal and priors spanning four orders of
+magnitude. Consistent with every calibration gate passing (they score
+the average/recommended arm, not the argmax across arms) while match
+play fails.
+
+Secondary open questions (not yet discriminated): sharp-position
+belief quality (all probes filtered to |wr-0.5| <= 0.45; games are
+decided in sharp positions); adversarial distribution shift (the
+opponent steers into the stack's mistakes; probes sample neutral
+self-play positions).
+
+**Decision, per the working agreements: this is a mechanism-level
+finding, not an engine bug. It goes back to the bmcts testbed** —
+reproduce the regime (large k, sequential reveal, thin per-arm
+evidence, prior scales), derive/gate a fix (candidates, to be
+pre-registered there: selection-aware final recommendation e.g.
+argmax over LCB/posterior quantile; the selection-aware accounting
+roadmap item in its final-choice form; evidence-floor gating on the
+recommendation). Cells B=32/128 NOT run (they would re-measure the
+same defect). No engine constant was touched in response to these
+results.
+
 ## Order of operations (fixed)
 
 1. Implement + model-free checks (invariants still green with
