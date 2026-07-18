@@ -415,6 +415,27 @@ the chooser shares PUCT's information, so parity is the honest
 target), deviation-rate reported. 2c/2d get their own registrations
 after 2b's outcome.
 
+## 2b outcome + 2c registration (appended before the match runs)
+
+**2b PARITY BAR MET, dead center.** 324 fresh second-turn deduped
+positions, contrast bot vs puct, all picks labeled: paired pick
+quality -0.0000, 95% CI [-0.0069, +0.0070] (bar +/-0.01); same move
+63.9%; disagreements split 45/47 (mean -0.0001); thin-pick rate 1.2%
+(baseline 28.5%). The per-decision defect is closed on fresh data.
+
+2c match (registered): 300 games, exactly the match64-rerun protocol
+(B = 64, temp 0, resign -0.95/6, komi 7, area/positional-ko, policy
+opening init, numGameThreads 8) with bot1 = contrast (useBayesSearch
+passenger + useBayesContrastChooser; stock allocation; NO
+useBayesSelection) vs bot0 = stock puct. Purpose: confirm no
+game-level/trajectory regression that static parity could hide.
+Registered expectation: Elo within +/-40 of zero (parity chooser,
+mostly-shared moves; resignation reads standard stats in both bots).
+This is the stop-the-bleeding gate, NOT the win attempt; 2d (voi
+allocation on contrast beliefs) is registered separately after 2c.
+Output: bayes-data/match-m8-2c/ (append-only), config
+cpp/configs/bayes_m8_match.cfg.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
