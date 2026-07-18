@@ -622,10 +622,11 @@ private:
   void bayesRecomputeNodeStats(SearchNode& node, bool isRoot);
   double bayesSigmaFromStErr(double stErrWinrate) const;
   //M7 Phase C audit dump (docs/bayes-m7-sim2real.md Amendment B); no-op
-  //unless KATAGO_BAYES_AUDIT is set in the environment.
+  //unless KATAGO_BAYES_AUDIT is set in the environment. M8: with
+  //KATAGO_BAYES_AUDIT_ALL also set, dumps every node recompute.
   void bayesAuditDumpRoot(
     const char* path, const SearchNode& node, const BayesSetState& ss,
-    const BayesNodeState& bs) const;
+    const BayesNodeState& bs, bool isRoot) const;
 public:
   //Read-only children-set posterior snapshot; public for the kata-bayes-root
   //GTP readout (single-threaded, after search).

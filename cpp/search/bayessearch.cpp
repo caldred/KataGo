@@ -397,12 +397,15 @@ void Search::bayesRecomputeNodeStats(SearchNode& node, bool isRoot) {
   bs.dKids = ss.dKids;
   bs.dBackup = ss.dBackup;
 
-  //M7 Phase C audit dump (docs/bayes-m7-sim2real.md Amendment B).
-  //Diagnostic-only: no behavior change unless KATAGO_BAYES_AUDIT is set.
-  if(isRoot) {
+  //M7 Phase C audit dump (docs/bayes-m7-sim2real.md Amendment B);
+  //M8 phase 1 extends it to every node via KATAGO_BAYES_AUDIT_ALL
+  //(docs/bayes-m8-integration.md). Diagnostic-only: no behavior change
+  //unless KATAGO_BAYES_AUDIT is set.
+  {
     static const char* auditPath = std::getenv("KATAGO_BAYES_AUDIT");
-    if(auditPath != NULL)
-      bayesAuditDumpRoot(auditPath, node, ss, bs);
+    static const char* auditAll = std::getenv("KATAGO_BAYES_AUDIT_ALL");
+    if(auditPath != NULL && (isRoot || auditAll != NULL))
+      bayesAuditDumpRoot(auditPath, node, ss, bs, isRoot);
   }
 }
 
@@ -410,14 +413,16 @@ void Search::bayesRecomputeNodeStats(SearchNode& node, bool isRoot) {
 //Single-threaded by the useBayesSearch contract, so plain append is safe.
 void Search::bayesAuditDumpRoot(
   const char* path, const SearchNode& node, const BayesSetState& ss,
-  const BayesNodeState& bs) const
+  const BayesNodeState& bs, bool isRoot) const
 {
   const NNOutput* nnOutput = node.getNNOutput();
   double stNode = nnOutput != NULL ? 0.5 * (double)nnOutput->shorttermWinlossError : -1.0;
   int64_t rootVisits = node.stats.visits.load(std::memory_order_acquire);
   std::ostringstream o;
   o.precision(17);
-  o << "{\"rootVisits\":" << rootVisits
+  o << "{\"nid\":" << (uintptr_t)&node
+    << ",\"isRoot\":" << (isRoot ? 1 : 0)
+    << ",\"rootVisits\":" << rootVisits
     << ",\"nextPla\":\"" << (node.nextPla == P_WHITE ? "W" : "B") << "\""
     << ",\"k\":" << ss.k << ",\"n\":" << ss.n
     << ",\"stNode\":" << stNode
@@ -466,7 +471,8 @@ void Search::bayesAuditDumpRoot(
       << ",\"D\":" << ss.D[j]
       << ",\"w\":" << ss.w[j]
       << ",\"childVisits\":" << childVisits
-      << ",\"childAvg\":" << childAvg << "}";
+      << ",\"childAvg\":" << childAvg
+      << ",\"childNid\":" << (uintptr_t)ss.child[j] << "}";
   }
   o << "]}";
   std::ofstream f(path, std::ios::app);
