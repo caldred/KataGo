@@ -246,6 +246,31 @@ Predictions: deficit stays closed; muPick track returns toward
 baseline (tight priors absorb lucky fresh evals into C/s); switch
 rate rises. Same three-clause bar.
 
+## R4 outcome (2026-07-18, append-only) — phase-1 prototype ladder closed
+
+  base -0.0889 | R2 -0.0041 | R3 -0.0029 | R4 -0.0200
+  switch: 5/14 | 4/14 | 3/14; muPick track: +0.065 | +0.089 | +0.069
+  (baseline +0.037; bar: deficit closure MET by all three, ranking and
+  tracking clauses MET by none).
+
+Ladder verdict: the deficit mechanism (verified-to-C flow +
+policy-consistent exceedance) is VALIDATED three ways over; the
+residual defect has moved: picked arms at 2-10 visits are
+verified-class in R4 (they carry recursive posteriors, not lucky
+evals), so the +0.07 tracking error originates in shallow-subtree cf
+values or in the C posterior itself — a different, smaller object
+than the -0.089 we started from. Phase 2's first task is therefore a
+PER-LEVEL tracking diagnostic inside the counterfactual machine
+(mu - avg by subtree depth/visits under each recursion) to localize
+the residual before the formal two-component derivation is finalized.
+The three-recursion ladder also fixed two theory points for the
+paper: the independence axiom of the sibling field is FALSE on real
+policies (P(best) concentration is correlation, not mean separation),
+and no single Gaussian field satisfies both value calibration and
+order-statistics calibration — the correlated-field factorization
+(common part in C, private s_eff, verification releasing the wide
+branch) is the resolution.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
