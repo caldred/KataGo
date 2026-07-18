@@ -582,6 +582,103 @@ Loc Search::getChosenMoveLoc() {
   //not preference (measured: near-uniform root visits on the empty board), so
   //sampling by visits plays exploration moves. Root avoid/hint filters are not
   //consulted here (unused in match/gtp defaults; entries are policy-legal).
+  //M8 phase 2a (docs/bayes-m8-integration.md R6): contrast-space root
+  //chooser. Reference arm = most child visits (tie: higher prior);
+  //posterior contrasts vs the reference level; exact port of the
+  //validated Python prototype (m8_counterfactual.py::_contrast_node).
+  if(searchParams.useBayesContrastChooser && rootNode->bayesState != NULL
+     && rootNode->bayesState->anchorFrozen) {
+    BayesSetState ss;
+    if(bayesComputeSetState(*rootNode, ss) && ss.k > 0) {
+      const int k = ss.k;
+      const double mover = (rootNode->nextPla == P_WHITE) ? 1.0 : -1.0;
+      const double rho = searchParams.bayesRho;
+      const NNOutput* nnOut = rootNode->getNNOutput();
+      double stNode = nnOut != NULL ? 0.5 * (double)nnOut->shorttermWinlossError : 0.0;
+      if(stNode <= 1e-8)
+        stNode = searchParams.bayesDefaultSigma;
+      double sr2 = std::exp(searchParams.bayesSigmaDA
+                            + searchParams.bayesSigmaDB * std::log(std::max(stNode * stNode, 1e-8)));
+
+      std::vector<int64_t> cVisits(k, 0);
+      std::vector<double> cAvg(k, -1.0);
+      double s2sum = 0.0;
+      int s2n = 0;
+      for(int j = 0; j < k; j++) {
+        if(ss.child[j] != NULL) {
+          NodeStats cst(ss.child[j]->stats);
+          cVisits[j] = cst.visits;
+          if(cst.visits > 0 && cst.weightSum > 0.0)
+            cAvg[j] = 0.5 + 0.5 * cst.winLossValueAvg;
+        }
+        if(ss.evaled[j]) {
+          double s = bayesSigmaFromStErr(ss.evalStErr[j]);
+          s2sum += s * s;
+          s2n++;
+        }
+      }
+      double vbar = s2n > 0 ? s2sum / (double)s2n
+                            : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
+
+      int rIdx = 0;
+      for(int j = 1; j < k; j++) {
+        if(cVisits[j] > cVisits[rIdx]
+           || (cVisits[j] == cVisits[rIdx] && ss.prior[j] > ss.prior[rIdx]))
+          rIdx = j;
+      }
+      double Lr, vLr;
+      if(cVisits[rIdx] >= 1 && cAvg[rIdx] >= 0.0) {
+        Lr = 0.5 + mover * (cAvg[rIdx] - 0.5);
+        vLr = vbar / (double)std::max(cVisits[rIdx], (int64_t)1);
+      }
+      else {
+        Lr = 0.5 + mover * (rootNode->bayesState->anchMu - 0.5);
+        vLr = rootNode->bayesState->anchVar;
+      }
+
+      double logPr = std::log(std::max(ss.prior[rIdx], 1e-12));
+      int jBest = rIdx;
+      double gBest = 0.0;
+      for(int j = 0; j < k; j++) {
+        if(j == rIdx)
+          continue;
+        double pm = searchParams.bayesDMean
+                    * (std::log(std::max(ss.prior[j], 1e-12)) - logPr);
+        double pv = 2.0 * sr2;
+        double gm, y, nv;
+        bool haveEv = false;
+        if(cVisits[j] >= 1 && cAvg[j] >= 0.0) {
+          y = 0.5 + mover * (cAvg[j] - 0.5) - Lr;
+          nv = std::max((1.0 - rho) * vbar / (double)std::max(cVisits[j], (int64_t)1)
+                        + (1.0 - rho) * vLr, 1e-9);
+          haveEv = true;
+        }
+        else if(ss.evaled[j]) {
+          double s2 = bayesSigmaFromStErr(ss.evalStErr[j]);
+          s2 = s2 * s2;
+          y = 0.5 + mover * (ss.evalWinrate[j] - 0.5) - Lr;
+          nv = std::max((1.0 - rho) * s2 + (1.0 - rho) * vLr, 1e-9);
+          haveEv = true;
+        }
+        else {
+          y = 0.0;
+          nv = 0.0;
+        }
+        if(haveEv) {
+          double w = pv / (pv + nv);
+          gm = pm + w * (y - pm);
+        }
+        else
+          gm = pm;
+        if(gm > gBest) {
+          gBest = gm;
+          jBest = j;
+        }
+      }
+      return ss.moveLoc[jBest];
+    }
+  }
+
   //useBayesChooseMu (M7 diagnostic, docs/bayes-m7-sim2real.md Amendment A):
   //same rule with the posterior maintained as a passenger on a stock PUCT tree.
   if((searchParams.useBayesSelection || searchParams.useBayesChooseMu)

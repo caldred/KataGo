@@ -561,6 +561,9 @@ vector<SearchParams> Setup::loadParams(
     if(cfg.contains("useBayesChooseMu"+idxStr)) params.useBayesChooseMu = cfg.getBool("useBayesChooseMu"+idxStr);
     else if(cfg.contains("useBayesChooseMu"))   params.useBayesChooseMu = cfg.getBool("useBayesChooseMu");
     else                                        params.useBayesChooseMu = false;
+    if(cfg.contains("useBayesContrastChooser"+idxStr)) params.useBayesContrastChooser = cfg.getBool("useBayesContrastChooser"+idxStr);
+    else if(cfg.contains("useBayesContrastChooser"))   params.useBayesContrastChooser = cfg.getBool("useBayesContrastChooser");
+    else                                               params.useBayesContrastChooser = false;
     if(cfg.contains("bayesRho"+idxStr)) params.bayesRho = cfg.getDouble("bayesRho"+idxStr, 0.0, 0.99);
     else if(cfg.contains("bayesRho"))   params.bayesRho = cfg.getDouble("bayesRho", 0.0, 0.99);
     else                                params.bayesRho = 0.0;

@@ -55,6 +55,7 @@ struct SearchParams {
   bool useBayesSearch; //Master switch for the Bayesian posterior search stack
   bool useBayesSelection; //M3: descend by voi-KG scores (contested x D) instead of PUCT; requires useBayesSearch
   bool useBayesChooseMu; //M7 diagnostic: argmax-mu final chooser without useBayesSelection (bayes passenger on a stock PUCT tree)
+  bool useBayesContrastChooser; //M8 phase 2a: contrast-space root chooser (docs/bayes-m8-integration.md R6); requires useBayesSearch
   double bayesRho; //Sibling residual error correlation (shared fraction of eval error variance)
   double bayesSigmaA; //Eval-sigma head, log space: log(sigma) = bayesSigmaA + bayesSigmaB * log(shorttermError)
   double bayesSigmaB; //Eval-sigma head, log space: slope on log(shorttermError)
