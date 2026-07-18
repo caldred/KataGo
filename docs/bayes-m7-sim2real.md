@@ -188,6 +188,46 @@ integration or the anchor offset, not the d-mean term (M5 already
 exonerated the prior mean). Either prediction failing is itself the
 lead.
 
+## Phase C outcome (2026-07-18, append-only)
+
+**P-C1 CONFIRMED — no engine wiring bug.** 3,780 root recomputes across
+the 60 audit runs: every field matches the bmcts reference at machine
+precision ONCE the Clark-chain sort convention is matched. The apparent
+1e-3 divergence (bOut/mKids/w on 3,749 lines) is REFERENCE-side:
+posterior.py's clark_max_and_weights orders by np.argsort(mus)[::-1]
+(unstable quicksort + reversal), which scrambles blocks of exactly-tied
+mus; the engine's stable descending order, replicated in Python, matches
+3,780/3,780 to 1e-12. Ties are engine-only phenomena (the [0.01, 0.99]
+clip and the 5e-3 d-mean floor manufacture them; 3,749/3,780 lines have
+one) — golden inputs are tie-free, which is why the 596 goldens never
+saw it. Benign for all past results; posterior.py should adopt the
+stable order for future golden parity (convention alignment, no result
+changes — testbed inputs are tie-free).
+
+**P-C2 CONFIRMED — the defect is the recursive integration on verified
+lines.** At the 27/60 final states where the mu-pick and visit-pick
+disagree, mover-perspective:
+- mu-picked arms (median 10 visits): mu - own-subtree-avg = +0.010.
+- visit-picked arms (median 26 visits): mu - own-subtree-avg = -0.089
+  (median -0.068); mu is even -0.036 below the arm's own FIRST eval.
+The posterior systematically under-credits the deepest-verified arm.
+Attribution lead (for M8, not yet proven level-by-level): the per-level
+debiasing (E[max] anchor offsets, Stein shrinkage) was calibrated on
+M1's fresh-single-eval evidence class; a frozen child fed by a deep
+verified subtree is NOT that evidence class — its effective error is
+far smaller than its claimed sigma, so the correction over-fires, and
+it over-fires once per level of a deep line. PUCT's plain average
+applies no correction and simply believes the verification. This
+explains the near-even concentration (largest depth disparity between
+the best line and the field), the failure of every chooser fix (mu
+itself is the corrupted quantity), and the hybrid arm's 75% share.
+
+**M7 verdict:** no implementation bug; the sim-to-real gap is the
+evidence model. The engine milestone that follows (M8, own registered
+gate): make the frozen-child claimed variance contract with subtree
+verification so the per-level correction vanishes on verified lines —
+the Bayesian form of what PUCT gets by default.
+
 ## What this is not
 
 No engine constant changes, no head refits, no new chooser — M7 is
