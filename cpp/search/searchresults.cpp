@@ -664,13 +664,20 @@ Loc Search::getChosenMoveLoc() {
           y = 0.0;
           nv = 0.0;
         }
+        double gv;
         if(haveEv) {
           double w = pv / (pv + nv);
           gm = pm + w * (y - pm);
+          gv = pv * nv / (pv + nv);
         }
-        else
+        else {
           gm = pm;
-        if(gm > gBest) {
+          gv = pv;
+        }
+        //M8 2c-b deviation gate: leave the reference arm only when the
+        //contrast posterior clears the registered confidence threshold.
+        if(gm > gBest
+           && gm / std::sqrt(std::max(gv, 1e-12)) >= searchParams.bayesContrastDeviationZ) {
           gBest = gm;
           jBest = j;
         }

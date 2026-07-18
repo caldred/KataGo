@@ -27,6 +27,9 @@ def main():
     pairs = json.load(open(args.pairs))
     positions, _ = parse_games(args.data)
     by_key = {(p["game_hash"], p["turn"]): p for p in positions}
+    from bayes_m8_2cb_run import fresh_positions
+    for p in fresh_positions(args.data):
+        by_key.setdefault((p["game_hash"], p["turn"]), p)
     eng = Engine(args.katago, str(CFG), args.model)
     out = open(Path(args.data) / "m8-extra-labels.jsonl", "a", buffering=1)
     try:
