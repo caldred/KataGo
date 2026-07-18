@@ -118,6 +118,8 @@ def main():
     ap.add_argument("--data", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--bots", default="bayes,puct",
+                    help="comma list from: bayes,puct,hybrid")
     args = ap.parse_args()
 
     positions, _ = parse_games(args.data)
@@ -133,12 +135,11 @@ def main():
         for k in r["children"]:
             known[(r["game_hash"], r["turn"], k["move"])] = k["deep"]
 
-    bots = {
-        "bayes": GtpBot(args.katago, CFG_DIR / "bayes_m7_gtp.cfg",
-                        args.model, "bayes"),
-        "puct": GtpBot(args.katago, CFG_DIR / "puct_m7_gtp.cfg",
-                       args.model, "puct"),
-    }
+    bot_cfgs = {"bayes": "bayes_m7_gtp.cfg", "puct": "puct_m7_gtp.cfg",
+                "hybrid": "hybrid_m7_gtp.cfg"}
+    names = args.bots.split(",")
+    bots = {n: GtpBot(args.katago, CFG_DIR / bot_cfgs[n], args.model, n)
+            for n in names}
     labeler = Engine(args.katago,
                      str(CFG_DIR / "bayes_m5_analysis.cfg"), args.model)
     out = open(args.out, "a", buffering=1)

@@ -582,7 +582,10 @@ Loc Search::getChosenMoveLoc() {
   //not preference (measured: near-uniform root visits on the empty board), so
   //sampling by visits plays exploration moves. Root avoid/hint filters are not
   //consulted here (unused in match/gtp defaults; entries are policy-legal).
-  if(searchParams.useBayesSelection && rootNode->bayesState != NULL
+  //useBayesChooseMu (M7 diagnostic, docs/bayes-m7-sim2real.md Amendment A):
+  //same rule with the posterior maintained as a passenger on a stock PUCT tree.
+  if((searchParams.useBayesSelection || searchParams.useBayesChooseMu)
+     && rootNode->bayesState != NULL
      && rootNode->bayesState->anchorFrozen) {
     BayesSetState ss;
     if(bayesComputeSetState(*rootNode, ss) && ss.k > 0) {
