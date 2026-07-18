@@ -73,6 +73,44 @@ it re-scores trees built by the baseline dynamics; allocation feedback
 (a fixed integrator would build different trees) is not captured.
 Phase-2 gates are the arbiter; phase 1 selects the mechanism.
 
+## Phase-1 outcome (2026-07-18, append-only)
+
+Base validation: the Python bottom-up re-integration reproduces the
+engine's root arm mus to 1.9e-15 across all 30 hybrid trees — the
+counterfactual machine is exact.
+
+**No registered toggle meets the closure bar (2/3 of -0.089).**
+  base -0.0889 | A -0.0948 | B -0.1106 | C -0.0582 | D -0.0949
+  BC -0.0915 | AC -0.0479 | AB -0.1295 | ABC -0.1061 | ABCD -0.1119
+- C (exclude verified arms' stale first evals from the Stein evidence)
+  is the best single surgery: closes ~35%; best combo AC ~46%.
+- B (evidence-aware eD) BACKFIRES (-0.111): the E[max] premium term is
+  not the culprit in the naive direction — sign structure through the
+  max/min alternation is more entangled than the toggle assumed.
+- Anchor mean-refresh (A) alone does not help (variance refresh was
+  explicitly out of scope pending derivation).
+
+**Diagnostic limit E** (verified children carry their plain subtree
+average with variance v_bar/visits — NOT a candidate, the bound):
+switch rate 11/14 (root argmax-mu joins the visit ranking); deficit
+trivially 0 at the root by construction. Together with the toggle
+failures this settles the attribution: the defect is STRUCTURAL to the
+recursion — no local term-surgery reaches it — and the corrected
+recursion must asymptote to the subtree average as verification
+accumulates.
+
+**The registered re-derivation branch FIRES.** Phase 2 is therefore a
+derivation task before any implementation: extend the generative model
+with subtree-verified evidence as a first-class evidence type — a
+child's delivered value must enter with (mean, variance) reflecting its
+realized verification (variance contracting toward v_bar/visits-scale,
+NOT re-shrunk against stale first-eval anchors), with the per-level
+E[max]/Stein corrections derived to vanish in that limit. The testbed
+never exposed this because its budget spread keeps subtree-verified
+children rare; the bmcts twin cell (deep concentrated lines) is part of
+phase 2 so the fix can be gated there first. Constants from derivation
+or labeling data only, never match results.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
