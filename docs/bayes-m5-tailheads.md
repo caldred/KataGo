@@ -172,6 +172,27 @@ bucket with CI; scale = sd ratio per bucket with CI.
   <= 10-position smoke run to debug the pipeline writes to a separate
   file (`bayes-data/m5-smoke.jsonl`) and is excluded from analysis.
 
+## Amendment A (2026-07-17, numerics only; registered BEFORE any analysis
+## of the real dataset — found during the doc-sanctioned smoke-file
+## pipeline debug, extraction complete but unanalyzed)
+
+The registered C4 fixed-point iteration fails on real match policies:
+(1) linear-P underflow at extreme spreads (a large early step pushes an
+arm's mean low enough that its quadrature P underflows to 0; the log
+error saturates at ~690 and the update runs away) — 6/10 smoke
+positions at tau=1.0, 10/10 at tau=0.7; (2) where it does not run away,
+convergence for tiny-q arms is geometric-slow (uniform step underweights
+arms far below the leader, whose sensitivity dlogP/dm scales with
+distance/s^2). Replacement, changing the ITERATION ONLY, not the
+equation, tolerance (1e-6), grid (2001), or exclusion rule: log-space
+quadrature via logsumexp (no underflow) and per-arm Newton
+preconditioning denom = max(1/s, (x* - m)/s^2) with damping 0.7 and step
+clip +/- 2s; iteration cap 2000. On the smoke records where the
+registered scheme converged, the replacement reaches the same fixed
+point to 3e-8 (after removing the additive-constant gauge); on all 10
+smoke records x both taus it converges in <= 20 iterations. No scoring
+rule, coefficient, bucket, or decision rule is touched.
+
 ## Cost arithmetic (frozen at registration)
 
 ~421 positions x (1 + 500 parent + up to 7 x 501 child visits) ~= 1.7M
