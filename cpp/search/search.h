@@ -39,6 +39,7 @@ struct SearchNodeTable;
 struct SearchNodeChildrenReference;
 struct ConstSearchNodeChildrenReference;
 struct BayesSetState;
+struct BayesNodeState;
 
 //Per-thread state
 struct SearchThread {
@@ -620,6 +621,11 @@ private:
   //bayessearch.cpp (useBayesSearch posterior side state, M2; selection fork, M3)
   void bayesRecomputeNodeStats(SearchNode& node, bool isRoot);
   double bayesSigmaFromStErr(double stErrWinrate) const;
+  //M7 Phase C audit dump (docs/bayes-m7-sim2real.md Amendment B); no-op
+  //unless KATAGO_BAYES_AUDIT is set in the environment.
+  void bayesAuditDumpRoot(
+    const char* path, const SearchNode& node, const BayesSetState& ss,
+    const BayesNodeState& bs) const;
 public:
   //Read-only children-set posterior snapshot; public for the kata-bayes-root
   //GTP readout (single-threaded, after search).

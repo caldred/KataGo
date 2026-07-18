@@ -50,7 +50,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <fstream>
 #include <numeric>
+#include <sstream>
 #include <vector>
 
 static double winrateOfNN(const NNOutput* nnOutput) {
@@ -393,6 +396,81 @@ void Search::bayesRecomputeNodeStats(SearchNode& node, bool isRoot) {
   bs.resolvable = rSum;
   bs.dKids = ss.dKids;
   bs.dBackup = ss.dBackup;
+
+  //M7 Phase C audit dump (docs/bayes-m7-sim2real.md Amendment B).
+  //Diagnostic-only: no behavior change unless KATAGO_BAYES_AUDIT is set.
+  if(isRoot) {
+    static const char* auditPath = std::getenv("KATAGO_BAYES_AUDIT");
+    if(auditPath != NULL)
+      bayesAuditDumpRoot(auditPath, node, ss, bs);
+  }
+}
+
+//Append one JSON line with the full root set state after a recompute.
+//Single-threaded by the useBayesSearch contract, so plain append is safe.
+void Search::bayesAuditDumpRoot(
+  const char* path, const SearchNode& node, const BayesSetState& ss,
+  const BayesNodeState& bs) const
+{
+  const NNOutput* nnOutput = node.getNNOutput();
+  double stNode = nnOutput != NULL ? 0.5 * (double)nnOutput->shorttermWinlossError : -1.0;
+  int64_t rootVisits = node.stats.visits.load(std::memory_order_acquire);
+  std::ostringstream o;
+  o.precision(17);
+  o << "{\"rootVisits\":" << rootVisits
+    << ",\"nextPla\":\"" << (node.nextPla == P_WHITE ? "W" : "B") << "\""
+    << ",\"k\":" << ss.k << ",\"n\":" << ss.n
+    << ",\"stNode\":" << stNode
+    << ",\"anchMu\":" << bs.anchMu << ",\"anchVar\":" << bs.anchVar
+    << ",\"vX\":" << ss.vX << ",\"kappaAlpha\":" << ss.kappaAlpha
+    << ",\"dKids\":" << ss.dKids << ",\"mKids\":" << ss.mKids
+    << ",\"vKidsPriv\":" << ss.vKidsPriv << ",\"bOut\":" << ss.bOut
+    << ",\"dBackup\":" << ss.dBackup
+    << ",\"nodeMu\":" << bs.mu << ",\"nodeB\":" << bs.b
+    << ",\"nodeVPriv\":" << bs.vPriv << ",\"nodeResolvable\":" << bs.resolvable
+    << ",\"params\":{\"rho\":" << searchParams.bayesRho
+    << ",\"sigmaA\":" << searchParams.bayesSigmaA
+    << ",\"sigmaB\":" << searchParams.bayesSigmaB
+    << ",\"sigmaDA\":" << searchParams.bayesSigmaDA
+    << ",\"sigmaDB\":" << searchParams.bayesSigmaDB
+    << ",\"dMean\":" << searchParams.bayesDMean
+    << ",\"defaultSigma\":" << searchParams.bayesDefaultSigma << "}"
+    << ",\"arms\":[";
+  for(int j = 0; j < ss.k; j++) {
+    int64_t childVisits = 0;
+    double childAvg = -1.0;
+    if(ss.child[j] != NULL) {
+      childVisits = ss.child[j]->stats.visits.load(std::memory_order_acquire);
+      NodeStats cst(ss.child[j]->stats);
+      if(cst.visits > 0 && cst.weightSum > 0.0)
+        childAvg = 0.5 + 0.5 * cst.winLossValueAvg;
+    }
+    bool frozen = ss.child[j] != NULL && ss.child[j]->bayesState != NULL
+                  && ss.child[j]->bayesState->anchorFrozen;
+    if(j > 0)
+      o << ",";
+    o << "{\"loc\":\"" << Location::toString(ss.moveLoc[j], rootBoard) << "\""
+      << ",\"prior\":" << ss.prior[j]
+      << ",\"evaled\":" << (ss.evaled[j] ? 1 : 0)
+      << ",\"terminal\":" << (ss.terminalEvaled[j] ? 1 : 0)
+      << ",\"frozen\":" << (frozen ? 1 : 0)
+      << ",\"evalWinrate\":" << ss.evalWinrate[j]
+      << ",\"evalStErr\":" << ss.evalStErr[j]
+      << ",\"steinMu\":" << ss.stein.mus[j]
+      << ",\"steinVPriv\":" << ss.stein.vPriv[j]
+      << ",\"steinB\":" << ss.stein.b[j]
+      << ",\"mu\":" << ss.mu[j]
+      << ",\"vPriv\":" << ss.vPriv[j]
+      << ",\"b\":" << ss.b[j]
+      << ",\"R\":" << ss.R[j]
+      << ",\"D\":" << ss.D[j]
+      << ",\"w\":" << ss.w[j]
+      << ",\"childVisits\":" << childVisits
+      << ",\"childAvg\":" << childAvg << "}";
+  }
+  o << "]}";
+  std::ofstream f(path, std::ios::app);
+  f << o.str() << "\n";
 }
 
 //M3 selection fork (bmcts _select_voi with seq_kg, algorithms.py): score

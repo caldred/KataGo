@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""M7 Phase C runner (docs/bayes-m7-sim2real.md Amendment B): select the
+registered audit set and run each position under the hybrid and bayes
+configs with KATAGO_BAYES_AUDIT set, one engine process per (position,
+config) so each dump lands in its own file.
+
+Audit set: extremity < 0.15, hybrid move != puct move, top 20
+White-to-move + top 10 Black-to-move by |paired leak| descending.
+
+Usage:
+  python3 bayes_m7_audit_run.py --katago ../cpp/build-cuda/Release/katago.exe \
+    --model ../models/kata1-....bin.gz --data ../bayes-data
+"""
+import argparse
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from bayes_m5_extract import parse_games, idx_to_gtp
+
+CFG_DIR = Path(__file__).resolve().parent.parent / "cpp" / "configs"
+CFGS = {"hybrid": "hybrid_m7_gtp.cfg", "bayes": "bayes_m7_gtp.cfg"}
+
+
+def select_audit_set(data):
+    two = {(r["game_hash"], r["turn"]): r
+           for r in map(json.loads, open(data / "m7-replay.jsonl"))}
+    hyb = {(r["game_hash"], r["turn"]): r
+           for r in map(json.loads, open(data / "m7-replay-hybrid.jsonl"))}
+    m5 = {(r["game_hash"], r["turn"]): r
+          for r in map(json.loads, open(data / "m5-tail.jsonl"))}
+    rows = []
+    for k in sorted(set(two) & set(hyb) & set(m5)):
+        r2, rh, r5 = two[k], hyb[k], m5[k]
+        if abs(r5["parent_raw"] - 0.5) >= 0.15:
+            continue
+        if rh["bot_hybrid"]["move"] == r2["bot_puct"]["move"]:
+            continue
+        mv = 1.0 if r2["pla"] == "W" else -1.0
+        leak = mv * (rh["bot_hybrid"]["deep"] - r2["bot_puct"]["deep"])
+        rows.append((abs(leak), r2["pla"], k))
+    rows.sort(reverse=True)
+    picked = ([k for _, pla, k in rows if pla == "W"][:20]
+              + [k for _, pla, k in rows if pla == "B"][:10])
+    return picked
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--katago", required=True)
+    ap.add_argument("--model", required=True)
+    ap.add_argument("--data", required=True)
+    args = ap.parse_args()
+    data = Path(args.data)
+    outdir = data / "m7-audit"
+    outdir.mkdir(exist_ok=True)
+
+    picked = select_audit_set(data)
+    print(f"audit set: {len(picked)} positions", file=sys.stderr)
+    positions, _ = parse_games(data)
+    by_key = {(p["game_hash"], p["turn"]): p for p in positions}
+
+    for i, key in enumerate(picked):
+        pos = by_key[key]
+        pla = "B" if len(pos["moves"]) % 2 == 0 else "W"
+        gtp_moves = [(c, idx_to_gtp(x)) for c, x in pos["moves"]]
+        for cfg_name, cfg_file in CFGS.items():
+            dump = outdir / f"{key[0]}_{key[1]}_{cfg_name}.jsonl"
+            if dump.exists():
+                dump.unlink()
+            env = dict(os.environ)
+            env["KATAGO_BAYES_AUDIT"] = str(dump)
+            cmds = ["boardsize 9", "komi 7"]
+            cmds += [f"play {c} {m}" for c, m in gtp_moves]
+            cmds += [f"genmove {pla}", "quit"]
+            gtp_in = "\n".join(cmds) + "\n"
+            r = subprocess.run(
+                [args.katago, "gtp", "-config", str(CFG_DIR / cfg_file),
+                 "-model", args.model],
+                input=gtp_in, capture_output=True, text=True, env=env,
+                timeout=300)
+            n_lines = sum(1 for _ in dump.open()) if dump.exists() else 0
+            if n_lines == 0:
+                print(f"WARNING: empty dump {dump.name} rc={r.returncode}",
+                      file=sys.stderr)
+        print(f"  {i+1}/{len(picked)} {key[0][:8]} t={key[1]}",
+              file=sys.stderr)
+    print("done", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
