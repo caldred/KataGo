@@ -271,6 +271,27 @@ order-statistics calibration — the correlated-field factorization
 (common part in C, private s_eff, verification releasing the wide
 branch) is the resolution.
 
+## Per-level diagnostic + R5 registration (appended before R5 runs)
+
+Per-level tracking (hybrid dumps, mover mu - avg by subtree visits):
+base -0.109/-0.101/-0.091/-0.079 across [2,4)/[4,8)/[8,16)/[16,65);
+R4 -0.096/-0.066/-0.057/-0.041. Under-crediting persists at EVERY
+level; the root's positive picked-arm gap is selection over the
+residual spread. The floor is the phantom premium charged at every
+opponent node: R4's s_eff enforces policy-consistent exceedance only
+for the top arm; mid-mass phantoms still overlap.
+
+R5: the unified field. d-means from the INVERSION COMPUTED AT s_eff
+SCALE — the joint solve: s_eff chosen so the inversion means (full
+legal set, s = s_eff) best match the regression means on the top-8
+arms (the M1-fitted support; least squares, 1-D solve over s_eff in
+[0.005, sigma_r]) — then those inversion means are the field means.
+Every arm's P(best) is policy-consistent by construction; top-arm
+value gaps match the measured regression; tail premiums collapse to
+the true policy tail mass. Verified arms keep the wide sr^2 release
+as in R4. Everything else identical to R4. Same three-clause bar,
+plus the per-level curve reported.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
