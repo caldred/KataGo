@@ -292,6 +292,34 @@ the true policy tail mass. Verified arms keep the wide sr^2 release
 as in R4. Everything else identical to R4. Same three-clause bar,
 plus the per-level curve reported.
 
+## R5 outcome + decision-quality readout (2026-07-18, append-only;
+## closes the phase-1 prototype ladder)
+
+R5: deficit -0.0107, switch 3/14, track +0.0788 — same shape as R4.
+
+Labeled decision quality (picked move's deep value vs PUCT's pick,
+mover persp, on the 30 audit positions — NOTE: this set was SELECTED
+as the baseline's worst disagreements, so all improvements below are
+optimistic; nothing here is confirmatory):
+  base -0.167 | R2 -0.104 | R4 -0.144 | R5 -0.127
+**The proxy metrics decouple from decision quality**: R3/R4/R5 close
+the visPick-deficit proxy better than R2 yet pick WORSE moves. R2 —
+verified-to-C fusion + inversion-consistent phantom moments, naive
+fusion — is the ladder's best decision-maker and the phase-2
+mechanism candidate.
+
+Ladder conclusions carried to phase 2:
+1. The phase-2 bar must BE labeled decision quality on FRESH
+   positions (registered sampling, disjoint from every set used so
+   far), not any belief-space proxy.
+2. R2-core is frozen as the candidate mechanism; the formal
+   derivation should produce its principled form (the R3-R5
+   refinements helped proxies, hurt decisions — parsimony wins).
+3. Static re-scoring cannot show the dynamic effect (a fixed
+   integrator builds different trees); the engine implementation
+   behind a flag + fresh-position paired replay (M7 protocol) is the
+   arbiter before any match gate.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
