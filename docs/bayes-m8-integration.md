@@ -141,6 +141,26 @@ misrankings; mu-picked tracking within +/-0.02 of baseline).
 No fitted constants: every quantity comes from existing heads or the
 recursion itself.
 
+## Phase-1b outcome + R2 registration (appended before R2 runs)
+
+Toggle R closes only ~8% (-0.0815): phantom-riding repairs the
+staleness but exposes the deeper defect — the E[max] premium is
+POLICY-INCONSISTENT. Under (floored d-means, sigma_r = 0.119) each of
+~60 phantom arms claims ~10% exceedance over the top arm where the
+policy says ~0.1%; summed over the set this manufactures the per-level
+premium. The premium is an order-statistics object and must be fed
+order-statistics-consistent moments — exactly the role of the
+P(best) inversion (M5: equivalent to the regression in-distribution,
+divergent precisely in tail exceedance).
+
+Toggle R2 = R with unverified-arm d-means from the policy inversion:
+per node, solve the Gaussian-field means over the FULL legal prior
+vector (no 5e-3 floor) such that P(arm a is max) = p_a with
+s = sigma_r (M5 Amendment A solver, tau = 1). Verified arms unchanged
+(they carry their posteriors). No fitted constants: s is the shipped
+sigma_r; the inversion is a reparameterization of the policy itself.
+Same success bar.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
