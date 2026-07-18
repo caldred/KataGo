@@ -355,6 +355,36 @@ estimate by parameterization. Scoring: labeled pick quality vs PUCT
 (primary, with the selection caveat), truth-curve flatness by evidence
 class, plus the ladder's proxies for continuity.
 
+## R6 outcome (2026-07-18, append-only) — new mechanism candidate
+
+Labeled pick quality vs PUCT's pick, ALL 30 positions (7 previously
+unlabeled R6 picks labeled first — they were worse than the labeled
+ones, moving R6 from -0.024 to the honest -0.054):
+  base -0.164 (83% worse, 3/30 same move)
+  R2   -0.105 (63% worse, 7/30 same)
+  R6   -0.054 (40% worse, 17/30 same)
+The contrast-space recursion cuts the baseline decision gap 3x on the
+audit set — which was SELECTED as maximally adversarial to bayes-style
+choosers — and supersedes R2-core as the phase-2 mechanism candidate.
+Its truth-curve is not flat (implied levels inherit Lr's bias; the
+DECISION statistic is the contrast, which the pick-quality readout
+scores directly).
+
+Caveats, recorded: (a) static re-scoring on baseline-built trees;
+(b) selection-adversarial and NEAR-DUPLICATE positions (four paired-
+game opening repeats found — phase-2 sampling must dedupe by position
+hash; effective n < 30); (c) single-eval label noise on individual
+picks.
+
+**Phase-2 spec, updated:** formal derivation of the contrast-space
+recursion (reference-arm parameterization, two-component contrast
+noise with the rho dividend, premium in contrast space); engine
+implementation behind a flag (the recursion is SIMPLER than the
+current one — no anchor freeze, no E[D] subtraction, levels from
+subtree averages); fresh deduped labeled positions; gate criteria =
+labeled pick quality + truth-curve flatness by evidence class +
+deviation/leak diagnostics; then the match gate.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
