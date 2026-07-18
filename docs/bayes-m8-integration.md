@@ -490,6 +490,24 @@ the testbed's 47/48-cell superiority actually lives. 2d requires the
 contrast-space selection derivation (KG in contrast units), its own
 registration, and the full gate ladder (replay, then match).
 
+## 2c-c registration (budget sweep; appended before any run)
+
+Rationale (Cal, 2026-07-18): PUCT's known holes — entrenchment of
+lucky early evals via visit momentum, and inability to escape a wrong
+policy prior — are largest at SMALL budgets, where argmax-visits is
+itself noise; the calibrated posterior corrects both by construction.
+Protocol: the 2c-b match protocol verbatim (gated contrast chooser,
+z* = 1.25 UNCHANGED at every budget — no per-budget tuning), 300
+games per budget, maxVisits in {8, 16, 32, 128} (64 already run:
+-12). ALL results reported regardless of outcome; the sweep is a
+measurement of the regime-response curve, not a selection procedure.
+Registered predictions: (1) relative Elo improves monotonically-ish
+as B falls; (2) the first positive-Elo regime, if any, appears at
+B <= 16. Confirmation rule, fixed now: any budget with positive Elo
+gets ONE N = 1000 confirmation run (one look); a win claim requires
+the confirmation CI to exclude zero. Output:
+bayes-data/match-m8-2cc-B<N>/ (append-only).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
