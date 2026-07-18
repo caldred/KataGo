@@ -320,6 +320,41 @@ Ladder conclusions carried to phase 2:
    behind a flag + fresh-position paired replay (M7 protocol) is the
    arbiter before any match gate.
 
+## R6 registration (appended before running): the contrast-space
+## recursion — bias-invariance by construction
+
+Derivation principle (from the truth-curve finding): selection quality
+requires bias EQUALITY across arms, not bias absence. Parameterize the
+recursion so that everything that cannot differ between arms never
+enters. Per node, with reference arm r (most subtree evals; tie ->
+higher prior): latent contrasts g_a = V*_a - V*_r.
+
+Evidence, all in contrast space:
+- Prior: g_a ~ N(dm_a - dm_r, 2 sigma_r^2) (unfloored d-mean
+  contrasts — the object M5's pairwise protocol validated).
+- Reference level Lr = reference arm's subtree average (childAvg;
+  node's own eval when nothing is visited). Levels carry the shared
+  optimism; they are never compared across arms.
+- Fresh eval of arm a: y_a = e_a - Lr, noise (1 - rho) s_a^2 +
+  vbar/visits_r — the measured sibling correlation rho = 0.26 finally
+  works FOR us: the shared component cancels in the contrast.
+- Verified arm a: y_a = avg_a - Lr (the PUCT contrast, inheriting its
+  invariance), noise (1 - rho) vbar (1/visits_a + 1/visits_r).
+Posterior per arm: Gaussian product of prior and its evidence
+(cross-arm correlation through Lr is second order for ranking;
+recorded as a prototype approximation). CHOICE: argmax posterior
+contrast mean (g_r = 0). LEVEL passed upward: Lr + E[max(0, g)] via
+Clark on the contrast posteriors.
+
+What this buys structurally: thin arms' contrasts carry wide evidence
+noise, so their posteriors shrink toward the (M5-calibrated,
+conservative) prior contrast — one lucky eval cannot win the argmax;
+deep arms' contrasts are PUCT contrasts with prior discipline; the
+whole gradient axis (evidence-dependent level bias) is out of the
+estimate by parameterization. Scoring: labeled pick quality vs PUCT
+(primary, with the selection caveat), truth-curve flatness by evidence
+class, plus the ladder's proxies for continuity.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
