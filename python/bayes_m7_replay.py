@@ -119,10 +119,67 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--bots", default="bayes,puct",
-                    help="comma list from: bayes,puct,hybrid")
+                    help="comma list from: bayes,puct,hybrid,contrast")
+    ap.add_argument("--second-turn", action="store_true",
+                    help="M8 2b fresh set: next eligible turn after the "
+                         "M5 pick, deduped by move prefix")
     args = ap.parse_args()
 
     positions, _ = parse_games(args.data)
+    if args.second_turn:
+        fresh = []
+        seen = set()
+        import re as _re
+        from pathlib import Path as _P
+        for sub in ("match64", "match64-rerun"):
+            for path in sorted((_P(args.data) / sub).glob("*.sgfs")):
+                for lineno, line in enumerate(path.open()):
+                    line = line.strip()
+                    m = _re.search(r"RE\[([BW])\+", line)
+                    if m is None or not line.startswith("(;"):
+                        continue
+                    if "PB[bayes]" in line:
+                        bayes = "B"
+                    elif "PW[bayes]" in line:
+                        bayes = "W"
+                    else:
+                        continue
+                    if m.group(1) == bayes:
+                        continue
+                    gh = _re.search(r"gameHash=([0-9A-F]+)", line)
+                    sti = _re.search(r"startTurnIdx=(\d+)", line)
+                    if gh is None or sti is None:
+                        continue
+                    from bayes_m5_extract import (MOVE_RE, sgf_to_idx,
+                                                  TURN_MIN, TURN_MAX)
+                    moves = [(c, sgf_to_idx(xy))
+                             for c, xy in MOVE_RE.findall(line)]
+                    lo = max(TURN_MIN, int(sti.group(1)))
+                    hi = min(TURN_MAX, len(moves) - 1)
+                    elig = [t for t in range(lo, hi + 1)
+                            if ("B" if t % 2 == 0 else "W") == bayes]
+                    if not elig:
+                        continue
+                    h = int(gh.group(1)[-4:], 16)
+                    t1 = elig[h % len(elig)]
+                    after = [t for t in elig if t > t1]
+                    if not after:
+                        continue
+                    t2 = after[0]
+                    prefix = tuple(moves[:t2])
+                    if prefix in seen:
+                        continue
+                    seen.add(prefix)
+                    fresh.append({
+                        "match": sub, "file": path.name, "line": lineno,
+                        "game_hash": gh.group(1), "result": m.group(0)[3:],
+                        "bayes": bayes, "turn": t2,
+                        "moves": moves[:t2],
+                        "game_move_idx": moves[t2][1],
+                    })
+        positions = fresh
+        print(f"fresh second-turn positions (deduped): {len(positions)}",
+              file=sys.stderr)
     if args.limit:
         positions = positions[:args.limit]
     print(f"positions: {len(positions)}", file=sys.stderr)
@@ -136,7 +193,8 @@ def main():
             known[(r["game_hash"], r["turn"], k["move"])] = k["deep"]
 
     bot_cfgs = {"bayes": "bayes_m7_gtp.cfg", "puct": "puct_m7_gtp.cfg",
-                "hybrid": "hybrid_m7_gtp.cfg"}
+                "hybrid": "hybrid_m7_gtp.cfg",
+                "contrast": "contrast_m8_gtp.cfg"}
     names = args.bots.split(",")
     bots = {n: GtpBot(args.katago, CFG_DIR / bot_cfgs[n], args.model, n)
             for n in names}
