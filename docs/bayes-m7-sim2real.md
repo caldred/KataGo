@@ -121,6 +121,31 @@ plus useBayesChooseMu; same 421 positions, same labeling.
   share the blame and Phase C (per-eval audit) runs on the hybrid
   configuration first (simpler tree dynamics to diff).
 
+## Amendment A outcome (2026-07-18, append-only)
+
+**P-A4 FAILS — the decomposition inverts the allocation story.** Hybrid
+(bayes posterior as passenger on a stock PUCT tree, argmax-mu chooser;
+tree: breadth 3.4, depth 10.8, chosen-visits median 42, thin 1.2%)
+still leaks -0.0197 [-0.0272, -0.0128] vs puct — 75% of the full bayes
+arm's -0.0262. Allocation explains only ~25% of the defect. Given the
+SAME deep tree and the same evals, the posterior's mu ranking loses to
+the plain visit-average ranking. This matches the M3 live observation
+(F5: mu-best, search-stats-worst) and moves the primary attribution to
+BELIEF INTEGRATION: the recursive posterior (max-backup E[max] offsets,
+Stein shrinkage, per-level clip, heads at every level) degrades the
+information it consumes relative to a plain average.
+
+Localization (post-hoc splits, reported not gated): the hybrid leak
+concentrates in NEAR-EVEN positions (-0.026 at extremity < 0.15,
+-0.020 at [0.15, 0.3)) and vanishes at extremity >= 0.3 — NOT a
+value-clip/bounds artifact. Color split: White-to-move leaks ~2x
+Black-to-move (hybrid -0.0254 vs -0.0140; disagree 41.5% vs 31.1%),
+echoing the A3 tests' uniformly negative white-persp mu-vs-searchWinrate
+diffs — a possible max/min-node asymmetry, confounded at komi 7 by
+position character. Phase C (per-eval audit vs the Python reference)
+now runs per its registered trigger, targeted first at near-even
+White-to-move positions from this replay set.
+
 ## What this is not
 
 No engine constant changes, no head refits, no new chooser — M7 is
