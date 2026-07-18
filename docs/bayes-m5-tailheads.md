@@ -200,3 +200,65 @@ visits. GPU benchmark (19x19, this build): 274 visits/s single-stream,
 ~1400 nnEvals/s batched; with 16 concurrent analysis queries expect
 20-40 min wall. Output: `bayes-data/m5-tail.jsonl` (append-only), one
 line per position; analysis report `docs/bayes-m5-report.json`.
+
+## FINDINGS (2026-07-17, append-only; full numbers docs/bayes-m5-report.json)
+
+Run: 421/421 positions (one per decisive lost game, count matched
+registration), 2,061 scored children, 1,053 tail (floor 150/300: OK),
+C4 non-convergence 0/421 after Amendment A. Extraction ~12 min wall.
+
+**Headline: every candidate OVERPENALIZES longshots — positive mover-
+persp bias in every prior bucket for every head, ordered by steepness.**
+Tail buckets (p < 3e-3): C1 +0.11/+0.12/+0.16, C3 +0.15/+0.16/+0.17,
+C2 +0.30/+0.27/+0.23, C4 +0.28/+0.26/+0.25, C4t +0.42/+0.40/+0.38 (all
+CIs exclude 0). The direction is OPPOSITE to the M3 blunder hypothesis:
+the shipped prior means were not rating longshots too well on average —
+truth (500-visit) says longshots in these positions are far less bad
+than any log-linear head claims. The 5e-3 consumption floor, added as a
+guard, is the single biggest accuracy feature in the tail: C1 beats C2
+in 100% of paired tail-SSE resamples (SSE 50.4 vs 103.8) and beats C3
+(57.9) in 97%, C4 (101.7) in 100%.
+
+**R1 verdict: NO winner.** Every candidate has tail buckets with |bias|
+>= 0.03 and CI excluding 0, so no candidate "wins the tail" under the
+registered rule. No integration candidate emerges. (C4 ~= C2 as the
+laptop equivalence predicted; its sub-log-linear flattening is real but
+far too small; tau=0.7 is strictly worse everywhere — steeper is wronger.)
+
+**R2 verdict: heteroscedasticity NOT established.** S1a (C2-residual sd
+vs the homoscedastic sqrt(2)*0.119 claim): all prior buckets 0.79-1.13,
+no bucket near the 1.5 trigger; at extremity [0.45,0.5] the ratio is
+0.69 [0.65,0.72] — variance is LOWER than claimed in decided positions
+(value compression), not higher. S1b (first-eval corrected-sigma check):
+~1.0 in mid buckets (M1 correction transfers), but 0.65 [0.56,0.74] in
+the deepest tail bucket and 0.48 [0.33,0.58] at extremity [0.45,0.5] —
+the corrected sigma OVERSTATES first-eval error exactly where M1 never
+sampled. S2's fitted head fails its held-out band nearly everywhere
+(0.29-0.72) and does not ship — consistent with R2 not firing.
+
+**R3 fires, with a sharper lead than "elsewhere".** The registered null
+branch applies: the tail-prior-head hypothesis is down-weighted — the
+beliefs' prior means and claimed noise, in the regime we suspected, err
+CONSERVATIVE, not optimistic. The extremity axis, however, carries real
+structure (registered buckets, so this is a readout, not post-hoc): the
+winrate-space heads' bias GROWS with |parent raw - 0.5| (C1: +0.08 ->
++0.25) while the logit link C3 collapses to +0.07 / +0.008 in the two
+extreme bins — the sigmoid attenuation that M1 Amendment B correctly
+rejected on mid-band data is correct in decided positions. This is the
+Amendment B caveat ("revisit if extreme-position drift") firing with
+data.
+
+**Post-hoc attribution hypotheses (NOT registered; for the next
+pre-registration, not for action):** (a) in near-decided positions the
+winrate-space d-mean offset (-0.1..-0.3) hits the [0.01, 0.99]
+consumption clip, flattening sibling means and erasing the prior's
+protection — argmax over flat, noisy beliefs is the F5 signature; the
+logit-shaped attenuation would keep ordering without clipping. (b) The
+0.48x overstated first-eval sigma at extremes makes the engine
+under-trust accurate evals in decided positions — slow to correct,
+consistent with grinding losses rather than single blunders. Both are
+mechanisms in the CONSUMPTION layer (clip + sigma at extremes), not in
+the fitted heads' mid-band coefficients. Caveats recorded: positions
+are conditioned on bayes losing (mover typically behind; bounded-below
+values compress y upward), draws are frequent at komi 7, and labels are
+500-visit values.
