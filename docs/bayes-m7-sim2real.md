@@ -92,6 +92,35 @@ tolerance; first divergent step localizes the bug. The 596 goldens
 cover the posterior FUNCTIONS; this audits the WIRING (set
 construction, anchor freeze timing, KG routing, virtual children).
 
+## Phase A outcome + Amendment A (2026-07-18; appended after the
+## two-arm run, BEFORE the third arm runs)
+
+Two-arm outcome (bayes-data/m7-replay.jsonl, n = 421): P-A1 CONFIRMED —
+paired leak -0.0262 [-0.0341, -0.0187] mover-persp, -0.0573 on the 46%
+disagreement positions; the match's per-decision defect reproduces with
+no opponent and no compounding. P-A2 CONFIRMED beyond its band: root
+breadth 41.8 vs 3.4, max PV depth 3.9 vs 10.7, chosen-move visits
+median 5 vs 48, thin-pick rate 28.5% vs 0.0%; the leak concentrates in
+the broad trees (-0.029 at breadth >= 20 vs -0.010 at breadth < 10).
+Attribution moves to ALLOCATION: voi-KG buys root breadth at a budget
+where Go's information lives at depth.
+
+Amendment A (registered now): a third arm isolating allocation from
+beliefs+chooser. Engine change: new SearchParams boolean
+`useBayesChooseMu` (default false; diagnostic-only) that enables the
+existing argmax-mu chooser in getChosenMoveLoc without
+useBayesSelection, so a bot can run bayes posterior state as passenger
+on a STOCK PUCT tree and still choose by posterior mean. No search
+behavior changes for any existing config (both match flags on implies
+the old path). Arm `hybrid` = bayes_m7_gtp.cfg minus useBayesSelection
+plus useBayesChooseMu; same 421 positions, same labeling.
+- P-A4: hybrid's paired leak vs puct is <= 1/3 of the bayes arm's
+  (beliefs + chooser are approximately healthy when fed a deep tree;
+  allocation carries the defect).
+- If instead hybrid leaks comparably to bayes, the beliefs/chooser
+  share the blame and Phase C (per-eval audit) runs on the hybrid
+  configuration first (simpler tree dynamics to diff).
+
 ## What this is not
 
 No engine constant changes, no head refits, no new chooser — M7 is
