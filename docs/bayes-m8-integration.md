@@ -111,6 +111,36 @@ children rare; the bmcts twin cell (deep concentrated lines) is part of
 phase 2 so the fix can be gated there first. Constants from derivation
 or labeling data only, never match results.
 
+## Phase 1b — repaired-recursion prototype (registered before running)
+
+Derivation (2026-07-18, from the phase-1 attribution): the structural
+defect is that VERIFIED-CHILD EVIDENCE NEVER FLOWS INTO THE SHARED
+LEVEL C. The set's C-estimate comes only from the frozen anchor and
+children's stale first evals, so unverified siblings' means stay
+anchored to first-glance information while the verified line moves —
+every E[max/min] then weighs an updated arm against stale phantoms.
+(Toggle B failed because it REMOVED verified arms from the D-moments
+rather than CONDITIONING on them.)
+
+Toggle R (prototype recursion, per node, bottom-up):
+1. C-posterior: precision-weighted fusion of (a) the anchor's
+   C-estimate (mean anchMu - eD, variance c0 = A0 + vD - 2g — its
+   fixed weight makes it wash out as evidence accumulates), (b) each
+   verified child: mean mu_a - m_a, variance v_a + sigma_r^2 (v_a =
+   the child's cf total claimed variance), (c) each fresh eval: mean
+   e_a - m_a, variance sigma_a^2 + sigma_r^2.
+2. Set assembly: verified arms (mu_a, v_a); fresh arms = product
+   fusion of prior N(Chat + m_a, VarC + sigma_r^2) with N(e_a,
+   sigma_a^2); unrevealed arms N(Chat + m_a, VarC + sigma_r^2).
+3. Node value: E[max] via the existing Clark machinery; prototype
+   carries all variance as private (b = 0) — the two-component
+   (shared-s) split is deferred to the formal phase-2 derivation and
+   noted as a prototype approximation.
+Success bar unchanged (close >= 2/3 of -0.089; flip >= 2/3 of the
+misrankings; mu-picked tracking within +/-0.02 of baseline).
+No fitted constants: every quantity comes from existing heads or the
+recursion itself.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
