@@ -436,6 +436,34 @@ allocation on contrast beliefs) is registered separately after 2c.
 Output: bayes-data/match-m8-2c/ (append-only), config
 cpp/configs/bayes_m8_match.cfg.
 
+## 2c outcome + 2c-b registration (appended before the diagnosis run)
+
+**2c: -135 Elo (W 38 / L 149 / D 113, n = 300). Bar (+/-40) FAILED;
++231 Elo recovered vs the -366 baseline** (wins 8 -> 38, draws
+49 -> 113); all 149 losses by resignation (slow leak, not blunders).
+Reading: per-decision MEAN parity (2b) does not survive compounding —
+with ~36% deviation rate per move and near-symmetric small errors, the
+drawish komi-7 landscape converts error variance asymmetrically
+(minus flips draws to losses more easily than plus flips draws to
+wins vs a solid opponent). Deviating on coin-flip contrasts buys
+variance with no mean edge.
+
+2c-b (deviation gate, registered): rerun the 2b fresh-position replay
+with KATAGO_BAYES_AUDIT dumps; from each final root state compute the
+contrast posterior mean AND variance per arm (the verified Python
+mirror); for a z-threshold ladder, the thresholded pick = contrast
+pick if its posterior z = g/sd(g) clears z*, else the reference arm.
+Score every thresholded pick with the existing labels (labeling any
+missing reference-arm picks). Pin z* = the smallest z whose surviving
+deviations have labeled mean improvement >= +0.005 with a
+cluster-bootstrap CI excluding 0 (if none, z* = the argmax of
+deviation mean, reported honestly as parity-targeted). Engine param
+`bayesContrastDeviationZ` implements the gate; the confirmatory match
+(2c rerun protocol) runs ONCE with z* pinned. Elo never tunes
+anything. Registered predictions: (1) deviation quality rises with z;
+(2) at z*, match Elo lands in [-40, +40] if surviving deviations are
+parity, positive if the CI-excluding-zero branch fired.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
