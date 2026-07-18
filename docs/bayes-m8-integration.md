@@ -464,6 +464,32 @@ anything. Registered predictions: (1) deviation quality rises with z;
 (2) at z*, match Elo lands in [-40, +40] if surviving deviations are
 parity, positive if the CI-excluding-zero branch fired.
 
+## 2c-b outcome (2026-07-18, append-only) — GAME-LEVEL PARITY
+
+**Gated contrast chooser (z* = 1.25): -12 Elo (W 30 / L 40 / D 230,
+n = 300; ~+/-19 Elo at 1 sigma). Registered parity bar [-40, +40]
+MET.** Both 2c-b predictions confirmed: deviation quality rose with z
+(ladder: -0.013 ungated -> ~0 at z >= 1.25); the fallback (parity)
+branch fired and the match landed on parity.
+
+The Elo arc of the M8 campaign, same protocol throughout: -366
+(baseline stack) -> -135 (contrast chooser ungated) -> **-12 (gated)**.
+Wins vs stock PUCT: 8 -> 38 -> 30, draws 49 -> 113 -> 230. CBTS now
+plays even with stock PUCT at B = 64 on 9x9, with a chooser that is
+derived, verified bit-exact against its reference, and pinned entirely
+from labeling data.
+
+What parity is and is not: the gated bot earns it largely by trusting
+the reference arm (PUCT's allocation) and deviating on the 5.9% of
+moves where its contrast posterior is confident — and those deviations
+are label-neutral, not yet label-positive. The WIN must come from
+information PUCT does not have: 2d re-enables bayes ALLOCATION (voi-KG
+routed on contrast-space beliefs) so the tree itself is built where
+the posterior says information is decision-relevant — the layer where
+the testbed's 47/48-cell superiority actually lives. 2d requires the
+contrast-space selection derivation (KG in contrast units), its own
+registration, and the full gate ladder (replay, then match).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
