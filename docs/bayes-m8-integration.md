@@ -216,6 +216,36 @@ Exactness claims: joint shrinkage of lucky fresh evals is native
 with weight v_a + sigma_r^2; the anchor's fixed A0 washes out. No
 fitted constants. Same three-clause bar.
 
+## R3 outcome + R4 registration (appended before R4 runs)
+
+R3: deficit -0.0029 (97%), but switch 4/14 and muPick track +0.0886 —
+the thin-arm optimism WORSENED. Attribution: the inversion means
+over-spread the prior field. Under an INDEPENDENT Gaussian field,
+policy-consistent P(best) forces the top arm's mean ~2 sigma above the
+pack (~+0.2), but M5 measured true value gaps saturating far below
+that. Order-statistics consistency and value calibration cannot
+coexist in an independent field — P(best) concentration in reality
+comes from CORRELATION (siblings share the position), not mean
+separation.
+
+R4 (correlated-field recursion): delta_a = shared + private; the
+shared part is unidentifiable within-set and merges into C (flat), so
+the model reduces to R3 with (i) d-means from the REGRESSION head
+(value-calibrated; unfloored form), (ii) per-arm private delta prior
+s_eff^2 for arms without subtree evidence, where s_eff is solved
+per-node (1-D) so that P(top-prior arm is best) under (m_reg, s_eff^2)
+matches its policy prior (bounds [0.005, sigma_r]); (iii) VERIFIED
+arms keep the wide sr^2 delta prior — the Gaussian field is the
+narrow branch of a mixture whose collapse branch (tactical
+refutations) verification identifies; without this release, a tight
+prior would shrink refutations away and reinstate the original
+disease. Total marginal spread stays head-calibrated; exceedance
+becomes policy-calibrated; no fitted constants (s_eff is a per-node
+solve, not a tuned scalar).
+Predictions: deficit stays closed; muPick track returns toward
+baseline (tight priors absorb lucky fresh evals into C/s); switch
+rate rises. Same three-clause bar.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
