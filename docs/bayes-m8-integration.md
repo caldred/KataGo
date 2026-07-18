@@ -161,6 +161,32 @@ s = sigma_r (M5 Amendment A solver, tau = 1). Verified arms unchanged
 sigma_r; the inversion is a reparameterization of the policy itself.
 Same success bar.
 
+## R2 outcome (2026-07-18, append-only) — MECHANISM VALIDATED
+
+  base -0.0889 | R -0.0815 | R2 **-0.0041** (95% closure; bar 2/3: MET)
+  switch 5/14 (bar 2/3: NOT met); muPick track +0.0650 vs baseline
+  +0.0366 (bar +/-0.02: NOT met).
+
+Reading: the two derived ingredients — verified-child evidence fused
+into the shared level C, and phantom/unverified moments made
+POLICY-CONSISTENT via the P(best) inversion (s = shipped sigma_r, no
+new constants) — eliminate the verified-line under-crediting almost
+completely. The remaining misrankings and the thin-arm optimism drift
+are attributed to a PROTOTYPE simplification, not the theory: R2
+replaced the Stein joint shrinkage with naive per-arm eval fusion, so
+a lucky fresh eval carries ~3x its proper weight. The tracking clause
+caught exactly this.
+
+**Phase-2 derivation is now fully specified:** keep the complete
+two-component Stein structure for fresh evals; replace the d-mean
+feature vector with the inversion means (full legal set, no floor);
+add the verified-child C-evidence terms to the shared-level estimation
+(anchor becomes one voice that washes out); derive the D-moments
+conditional on verified arms. Then: re-prototype against the same bar
+(all three clauses), golden-extend (tie-inclusive inputs, stable-sort
+convention both sides), bmcts twin cell, engine gate — each step its
+own registered doc per the working agreements.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
