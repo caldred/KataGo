@@ -146,6 +146,48 @@ position character. Phase C (per-eval audit vs the Python reference)
 now runs per its registered trigger, targeted first at near-even
 White-to-move positions from this replay set.
 
+## Phase C protocol (Amendment B, registered before implementation)
+
+Instrument: an audit dump in bayesRecomputeNodeStats, gated on the
+environment variable KATAGO_BAYES_AUDIT (file path); when set, every
+ROOT recompute appends one JSON line with the full set state — per arm:
+move, prior, evaled/terminal/frozen, evalWinrate, evalStErr, stein mu,
+posterior mu, vPriv, b, R, D, w, child visit count; set-level: n, k,
+anchMu, anchVar, sigmaR, vU, varS, eD, vD, g, vX, kappaAlpha, dKids,
+mKids, vKidsPriv, bOut, dBackup, and the node posterior written back
+(mu, b, vPriv, resolvable). No behavior change whatsoever when the
+variable is unset; diagnostic-only, like useBayesChooseMu.
+
+Audit set: from the replay join, the 20 White-to-move and 10
+Black-to-move positions with extremity < 0.15 where hybrid disagreed
+with puct, ordered by |paired leak| descending (deterministic given
+the existing data). Each position runs once under the hybrid config
+and once under the bayes config with the dump enabled.
+
+Layer 1 (wiring): for every dumped root recompute, feed the dumped
+INPUTS (priors, evals, stErrs, anchor, frozen-child states, dumped
+sigmaR/vU/varS/eD/vD/g) through the bmcts reference implementations
+(posterior.py: extreme_moments_gaussian, shrink_siblings_stein, the
+node posterior backup) with the engine coefficients, and diff against
+the dumped OUTPUTS at 1e-9 relative tolerance (the golden-suite
+standard). First divergent (position, recompute, field) localizes any
+wiring bug. Also cross-check the engine's own derived stages (sigmaR
+from stNode, vU/varS from evalStErrs, dMeans from priors) recomputed
+in Python from primitives.
+Layer 2 (theory): at each position's final recompute, decompose
+mover-persp (mu_j - plain-visit-average_j) for the hybrid's chosen arm
+vs puct's chosen arm into contributions: d-mean prior term, Stein
+shrinkage pull toward the set, anchor offset (eD), and frozen-child
+integration (cbs.mu vs the child's raw eval). The dominant term at the
+misranked decisions is the finding.
+
+Predictions: P-C1 layer 1 finds NO divergence (596 goldens + A-tests
+make a raw math bug unlikely; the color asymmetry is more plausibly
+model-level). P-C2 the dominant layer-2 term is the frozen-child
+integration or the anchor offset, not the d-mean term (M5 already
+exonerated the prior mean). Either prediction failing is itself the
+lead.
+
 ## What this is not
 
 No engine constant changes, no head refits, no new chooser — M7 is
