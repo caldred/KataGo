@@ -187,6 +187,35 @@ conditional on verified arms. Then: re-prototype against the same bar
 convention both sides), bmcts twin cell, engine gate — each step its
 own registered doc per the working agreements.
 
+## R3 registration (appended before running): the exact-GLS recursion
+
+The phase-2 derivation, executed numerically-exactly instead of by
+closed form. Per node, latent theta = (C, s, delta_1..delta_k) with
+priors: C flat (1e6), s ~ N(0, var_s), delta_a ~ N(0, sigma_r^2)
+centered on the INVERSION means m_a (full legal set, no floor,
+s_inv = sigma_r). Observation rows:
+- anchor: anchor_mu = C + sum_a pi_a delta_a + eps, the E[D]
+  linearization with pi = Clark argmax weights of (m_a, sigma_r^2);
+  offset E_D - sum pi_a E[delta_a]; noise A0 + max(v_D - sigma_r^2 *
+  sum pi_a^2, 0).
+- fresh eval (evaled, subtree evals <= 1): e_a - m_a = C + delta_a + s
+  + u_a, u_a ~ N(0, v_u), per-arm sigma from the head, shared s.
+- verified (subtree evals >= 2, frozen, in cf): mu_a - m_a = C +
+  delta_a + w_a, w_a ~ N(0, v_a) with v_a the child's cf variance
+  (first eval NOT re-included — it lives inside the child posterior
+  via the child's anchor, per the freeze semantics).
+Posterior of V*_a = C + m_a + delta_a exactly (information-form
+solve); one-factor P-var-style projection on the C-error (V_X =
+Var(C_err), b_a = Cov(V_a, C_err)/V_X, v_priv = remainder, floor 0);
+E[max] via the existing Clark quadrature. Node passes (clip(E[max]),
+total variance, 0) upward as in R/R2 (two-component pass-up deferred
+to the engine-form derivation).
+
+Exactness claims: joint shrinkage of lucky fresh evals is native
+(shared C and s soak cross-arm surprise); verified evidence pins C
+with weight v_a + sigma_r^2; the anchor's fixed A0 washes out. No
+fitted constants. Same three-clause bar.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
