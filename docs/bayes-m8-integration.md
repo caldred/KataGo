@@ -385,6 +385,36 @@ subtree averages); fresh deduped labeled positions; gate criteria =
 labeled pick quality + truth-curve flatness by evidence class +
 deviation/leak diagnostics; then the match gate.
 
+## Phase 2a registration (engine contrast chooser; appended before
+## implementation)
+
+Standing goal (Cal, 2026-07-18): iterate until CBTS beats PUCT.
+Staged: (2a) engine R6 chooser -> (2b) fresh-position replay, parity
+bar -> (2c) match, stop-the-bleeding bar -> (2d) voi allocation on
+contrast beliefs, the win attempt.
+
+2a implementation: new SearchParams flag `useBayesContrastChooser`
+(requires useBayesSearch passenger state; orthogonal to
+useBayesSelection). getChosenMoveLoc computes the R6 root pick:
+reference arm = most child visits (tie: higher prior); mover-persp
+contrast prior dMean * (log p_a - log p_r), UNfloored, variance
+2 sigma_r^2; evidence = child-average or first-eval contrast against
+the reference level with (1 - rho)-scaled noise per the R6
+registration; pick = argmax posterior contrast (reference at 0).
+Exact port of scripts/m8_counterfactual.py::_contrast_node's root
+behavior. Verification protocol: run with KATAGO_BAYES_AUDIT on >= 10
+positions; recompute the pick from the engine's own final dumped root
+state with the Python reference; every pick must match exactly.
+
+2b: fresh positions = the SECOND eligible bayes-to-move turn per
+decisive lost game (the M5 extension rule, deterministic), deduped by
+full move-prefix; paired replay contrast-bot (stock PUCT allocation +
+contrast chooser) vs puct, picks labeled at 500 visits. Registered
+bar: paired pick-quality difference within +/-0.01 of PUCT (parity;
+the chooser shares PUCT's information, so parity is the honest
+target), deviation-rate reported. 2c/2d get their own registrations
+after 2b's outcome.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
