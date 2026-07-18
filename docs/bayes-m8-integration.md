@@ -508,6 +508,34 @@ gets ONE N = 1000 confirmation run (one look); a win claim requires
 the confirmation CI to exclude zero. Output:
 bayes-data/match-m8-2cc-B<N>/ (append-only).
 
+## 2c-c outcome (2026-07-18, append-only) — FIRST CONFIRMED WIN
+
+Sweep (n = 300 each, z* = 1.25 everywhere): B=8 +16, B=16 +47,
+B=32 -85, B=64 -12, B=128 -15. Confirmations (n = 1000, one look,
+registered rule):
+- B=8: -48 +/- 8 — the sweep's +16 was selection noise; the
+  confirmation rule caught it (the M4 lesson, working as designed).
+- **B=16: +52 +/- 7 Elo (W 295 / L 147 / D 558). CI excludes zero.
+  CBTS DEFEATS STOCK PUCT AT B = 16.** 2:1 win ratio, protocol
+  identical to the M3 gate matches, every constant from derivation or
+  labeling data, Elo never used as a tuning signal, prediction
+  registered before the sweep ran.
+
+Regime reading: at B = 16 visit counts carry almost no information
+and PUCT's known failure modes (early-eval entrenchment, unescapable
+policy prior) are maximal; the calibrated contrast posterior is the
+only informative statistic available — and it wins. At B >= 32 PUCT's
+verification statistics come online (the B=32 dip -85 is a real
+anomaly to attribute before any broader claim — possibly the worst
+point of the tradeoff between our gate trusting a still-thin
+reference arm and PUCT's averages starting to mean something).
+
+Open lines, in order: (a) attribute the B=32 dip; (b) 2d contrast-voi
+allocation — the win attempt at standard budgets; (c) the bmcts twin
++ formal write-up of the contrast recursion for the paper's engine
+section (destination form: the method and its demonstrated property —
+superiority in the low-budget regime, parity at standard budgets).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
