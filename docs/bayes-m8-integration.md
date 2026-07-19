@@ -573,6 +573,46 @@ by an M5-style contrast-calibration-by-visit-bucket study on labeled
 replay data; the fix, if confirmed, is a derived floor term in the
 contrast noise (label-pinned, never Elo-tuned).
 
+## 2d registration (contrast-voi allocation; appended before
+## implementation). The B=2048 N=1000 confirmation was STOPPED
+## unread on Cal's reprioritization (2026-07-18); it re-queues after
+## 2d.
+
+Design (the contrast-KG derivation):
+Per node, the contrast state (reference r = most subtree evals, tie
+higher prior; posteriors g_a ~ N(m_a, v_a), g_r = 0) already computed
+for the chooser becomes the ALLOCATION currency:
+- Decision weights: w = Clark argmax weights over the contrast field
+  {g_r = 0} u {g_a} (mover persp) — P(arm attains the local max).
+- One-visit variance drops: for a non-reference arm, D_a = v_a -
+  v_a', where v_a' uses evidence noise with n_a + 1 subtree evals.
+  For the REFERENCE arm, one visit tightens vLr, which sits in EVERY
+  arm's evidence noise (the shared term): D_r = sum_a [v_a -
+  v_a'(vLr')]. Verifying the reference improves all contrasts at
+  once — this is what makes deep principal-variation trees emerge
+  naturally instead of breadth (the old voi's level-variance currency
+  had no such coupling).
+- Root selection: argmax_j overlap-weighted drop, contested_j x D_j,
+  the M2-registered routing form with contrast quantities (contested
+  = the decision-boundary overlap density from the same Clark pass).
+  Interior nodes: route by the local w (the local decision is the
+  node's value, which feeds the parent's contrast).
+- Unvisited arms enter through their prior contrasts: only arms whose
+  prior contrast overlaps the decision boundary are contested —
+  exploration is policy-gated by construction, tail arms are never
+  visited (the 5e-3-floor pathology cannot recur).
+No new constants: everything derives from the existing heads and the
+already-shipped contrast state. Flag: useBayesContrastSelection
+(requires useBayesSearch + useBayesContrastChooser).
+
+Gate ladder (registered): (i) tree-shape telemetry on the M7 replay
+protocol — P-2d1: depth comparable to PUCT (mean >= 8), breadth far
+below old voi (<= 10), chosen-visits median healthy; (ii) fresh-
+position labeled pick quality — P-2d2: >= PUCT (parity floor;
+positive = the win signal); (iii) matches: B = 64 first (P-2d3:
+non-inferior, >= -40; positive at N = 1000 = THE WIN), then the
+budget curve. Elo tunes nothing, as always.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
