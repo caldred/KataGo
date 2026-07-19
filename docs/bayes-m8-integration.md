@@ -536,6 +536,20 @@ allocation — the win attempt at standard budgets; (c) the bmcts twin
 section (destination form: the method and its demonstrated property —
 superiority in the low-budget regime, parity at standard budgets).
 
+## 2c-d registration (high-budget extension; appended before any run)
+
+Cal (2026-07-18): measure B > 1000. Protocol: 2c-c verbatim (gated
+contrast chooser, z* = 1.25 unchanged, n = 300 per budget), maxVisits
+in {256, 1024, 2048}. Registered predictions: (1) draw rate rises
+with B toward saturation as both bots converge on the net's resolved
+minimax; (2) Elo stays within the parity band [-40, +40] at every
+tested budget — deviations become rare as the reference arm coincides
+with PUCT's pick; (3) the alternative worth watching: if the B=32-dip
+mechanism is scale-dependent rather than a one-off, a dip recurs at
+some budget — any point outside [-40, +40] gets the N = 1000
+confirmation rule before being treated as real. All results reported.
+Output: bayes-data/match-m8-2cd-B<N>/ (append-only).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
