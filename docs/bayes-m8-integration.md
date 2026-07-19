@@ -739,6 +739,34 @@ QUALITY (deviate only where volatility says the reference average is
 untrustworthy). Its ladder readouts decide against the explicit bar
 above.
 
+## 2d-d outcome (2026-07-19, append-only)
+
+**P-2dd2 REFUTED**: paired pick quality -0.0075, CI [-0.0141,
+-0.0013] (excludes zero, negative) vs 2d-c's -0.0031; divergence rate
+rose (31.8% vs 28.7%); disagreement mean -0.0240. Fails the
+registered positive-mean bar at the replay rung; matches not run
+(sequential gating). Attribution lead, recorded not proven: the
+utility-second-moment proxy for subtree volatility is CONTAMINATED —
+score-utility swings and natural minimax drift inflate v_obs on
+healthy deep lines, so trustworthy averages get second-guessed. The
+clean retest (if pursued) requires a winloss-only spread accumulator
+in BayesNodeState plus a label study validating that v_obs separates
+resolved from unresolved arms BEFORE it re-enters any consumer.
+
+## Campaign position after 2d-d (recorded for the phase-2 write-up)
+
+Confirmed, pre-registered results: (1) CBTS beats stock PUCT at
+B = 16: +52 +/- 7 Elo, n = 1000; (2) game-level parity at standard
+budgets with the gated contrast chooser (-12 at B = 64, parity
+through B = 1024); (3) the divergence-rate law: ~-2 Elo per %
+neutral-quality divergence at komi 7 — the standard-budget Elo
+channel is saturated by PUCT's shared-error cancellation unless
+divergence quality is strictly positive, a bar no allocation variant
+has yet cleared. Domain findings with standalone value: the flat
+noise curve (p = 0.15), resolution-limited information, the
+contrast/bias-invariance principle, and the observable-volatility
+hypothesis (open pending a clean proxy).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
