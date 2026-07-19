@@ -797,6 +797,38 @@ sibling 0.26; P-2de2 cousin correlation is materially lower than
 within-subtree (this gap is the contrast principle's quantitative
 justification and the ceiling on contrast-evidence quality).
 
+## 2d-e outcome (2026-07-19, append-only) — the object CBTS must model
+
+First-pass variogram (error-vs-shared-root-label proxy; drift
+inflation recorded, clean pass needs descendant labels): sibling
+1.13* / subtree-d2 0.87 / parent-child 0.77 / subtree-d3+ 0.67 /
+COUSIN 0.42 (pooled eval-error sd 0.193). P-2de1 CONFIRMED: within-
+subtree correlation is 0.67-0.87 where the noise model assumed 0 —
+the /n was wrong by the scale of the phenomenon. P-2de2 CONFIRMED:
+the cousin entry sits ~0.3-0.45 of variance below every within-
+subtree entry — the component contrasts cancel and averaging cannot;
+the quantitative basis of the contrast principle AND the floor on
+contrast-evidence quality. (*sibling 1.13 vs M1's 0.26: different
+estimand — deep siblings vs a SHARED label include shared true-value
+drift; M1 measured fresh evals vs own labels.)
+
+Synthesis (the campaign's theoretical destination, stated once): eval
+errors in a search tree follow a NESTED covariance over tree
+relationships. Every phenomenon this campaign measured is a
+projection of that object: the flat noise curve (within-subtree
+entries), the contrast principle's success (cousin gap), PUCT's
+robustness (its statistics only ever compare quantities whose shared
+components cancel), the divergence-rate law (deviating spends the
+cousin gap), and the failure of every variance-drop currency
+(they price the cancelled component). The machinery that converts
+CBTS's calibration into Elo must be derived FROM the measured
+variogram — evidence noise, KG currency, and gate thresholds all fall
+out of its entries. Next (each its own registration): (i) clean
+variogram with descendant labels; (ii) re-derive the contrast noise
+and allocation currency from it; (iii) the ladder again. The
+low-budget win (+52 at B=16) and standard-budget parity stand as the
+demonstrated results meanwhile.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
