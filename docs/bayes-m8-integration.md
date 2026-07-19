@@ -688,6 +688,33 @@ quality >= parity; P-2dc3 matches: B = 64 >= -40 (win = positive at
 N = 1000), B = 16 win retained, B = 32 dip reduced (a coherent
 allocator removes the suspected gate/allocation mismatch).
 
+## 2d-d registration (observed subtree volatility as per-arm evidence
+## noise; Cal's proposal, 2026-07-18; appended before implementation)
+
+Insight: 2d-b showed mean contrast error is resolution-limited (flat
+in n), dominated by a tail of tactically-unresolved arms — but WHICH
+arms are unresolved is OBSERVABLE: the realized variance of a
+subtree's sampled values (quiet lines agree; tactical lines swing with
+the sampled reply). This is the deep-subtree empirical counterpart of
+the shorttermWinlossError head already consumed at n = 1.
+
+Implementation: per-arm contrast evidence noise becomes
+  nv_a = (1 - rho) * (v_obs,a + vLr-term),
+where v_obs,a = the arm subtree's realized value variance (derived
+from the node stats utility second moment, winloss-scaled — recorded
+prototype approximation), floored by the head claim at small n
+(empirical-Bayes handoff: head at n <= 2, observed at n >= 3, floor
+at max(head^2 * 0.25, tiny)). NO division by n (the 2d-b flat curve);
+NO new constants beyond the structural handoff at n = 3. Both
+consumers inherit automatically: contested widens on volatile arms
+(the resolution allocator drills contested-and-volatile lines) and
+the deviation gate distrusts volatile averages.
+
+Predictions: P-2dd1 tree shape retains depth, with visits shifting
+toward volatile contested lines; P-2dd2 replay pick quality improves
+over 2d-c specifically on positions whose chosen-line volatility is
+high; P-2dd3 the match ladder (64/16/32) at or above 2d-c's results.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
