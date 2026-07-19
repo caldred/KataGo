@@ -663,6 +663,31 @@ tree shape. Caveats recorded: n <= 64 range only; labels share the
 net's systematic bias with the averages, so absolute levels are
 understated — the SHAPE in n is the load-bearing measurement.
 
+## Normalized-curve outcome + 2d-c registration (appended before
+## implementation)
+
+Normalized ratio curve (err^2 / head-claimed s^2, 4,570 samples):
+MEAN stays flat in n (even split 1.6 -> 1.2 over 40x visits; 1/n
+predicts -> 0.04) while the MEDIAN falls ~7x — the mean is dominated
+by a tail of arms whose error NEVER improves at 64-visit depth
+(tactically unresolved lines: averaging measures the wrong quantity
+precisely). Conclusion, theoretically grounded: search information is
+RESOLUTION-LIMITED; any variance-drop currency (level or contrast)
+misprices allocation because the mean-square it models is
+tail-dominated by irreducible resolution error.
+
+2d-c (resolution allocation): root score = contested_j alone (the
+contrast-field overlap density — buy resolution AT THE DECISION
+BOUNDARY; the top-two/TTTS principle, v5-validated in the testbed);
+interior nodes route by local w (extend the PV of the line under
+resolution); D is DROPPED (model refuted by 2d-b), not re-fitted.
+Viability: non-terminal. No constants at all. Predictions: P-2dc1
+tree shape inverts — depth >= 8, breadth <= 10, root visits
+concentrated on the top 2-3 contested arms; P-2dc2 replay pick
+quality >= parity; P-2dc3 matches: B = 64 >= -40 (win = positive at
+N = 1000), B = 16 win retained, B = 32 dip reduced (a coherent
+allocator removes the suspected gate/allocation mismatch).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation

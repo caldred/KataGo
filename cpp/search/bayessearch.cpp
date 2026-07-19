@@ -655,11 +655,17 @@ void Search::bayesSelectBestChildToDescend(
           BayesPosterior::clarkMaxAndWeights(fieldMu, fieldVar, m, v, w);
           return w;
         }();
+    //2d-c (docs/bayes-m8-integration.md): resolution allocation. The
+    //variance-drop currency D is refuted by the 2d-b noise-curve study
+    //(mean error is resolution-limited, not sample-limited); visits buy
+    //resolution AT THE DECISION BOUNDARY: score = contested alone at
+    //the root, local w at interior nodes (PV extension).
+    (void)gvNext;
+    (void)dRef;
     for(int j = 0; j < ss.k; j++) {
-      double D = (j == rIdx) ? dRef : std::max(gv[j] - gvNext[j], 0.0);
-      scoreV[j] = contested[j] * D;
+      scoreV[j] = contested[j];
       tieV[j] = (j == rIdx) ? 0.0 : gm[j];
-      resolvedV[j] = (D <= 1e-18);
+      resolvedV[j] = false;
     }
   }
   else {
