@@ -921,3 +921,64 @@ waitForSearchToEnd instead of reporting the error — the guard should
 run before the async spawn (desktop-side fix suggested).
 Artifacts: docs/bayes-m8-2ce-telemetry.json; match dirs
 bayes-data/match-2ce-B{8,16,32,64}.
+
+## 2d-f registration (clean tree variogram — descendant labels;
+## 2026-07-19, appended before any labeling run)
+
+Purpose: 2d-e's first pass measured error products against the SHARED
+root-arm label, so every deep entry is inflated by true-value drift
+along the line (minimax drift is common to both members of a pair and
+enters the product as signal, not noise). Engine testing has meanwhile
+confirmed the practical need: the correlation infrastructure must
+cover ancestor–descendant structure, not just siblings — the
+descendant cascade shifts means but represents no descendant
+covariance. The clean estimand is the covariance of FIRST-EVAL errors
+about each node's OWN value: e_v = eval_v − L_v, where eval_v is the
+raw first NN eval recorded in the parent's arm entry (evalWinrate —
+not the clipped anchMu the first pass had to fall back to) and L_v is
+a 500-visit deep label at v's own position (the M1/m5 labeling rung;
+reportAnalysisWinratesAs = WHITE throughout, so no mover correction).
+Terminal-evaled arms excluded. Root nodes excluded (no parent arm
+entry, hence no clean first eval).
+
+Sampling (deterministic, from the existing m8-audit *_hybrid.jsonl
+dumps; python/bayes_m8_label_descendants.py): per audited position,
+the two root arms with the largest subtrees plus the next-largest
+evaled arm (cousin diversity); within each deep arm, the principal
+(max-childVisits) chain to relative depth 4, plus the largest evaled
+sibling at relative depths 1–3. <= 15 labels/position (fewer where
+dumps are shallow). Labels append to
+bayes-data/m8-desc-labels.jsonl keyed by (game_hash, turn, path);
+the script is resumable (skips already-labeled keys).
+
+Analysis (bmcts scripts/m8_variogram_clean.py): pair all labeled
+nodes within a tree; classify by path-prefix LCA — sibling,
+parent-child, ancestor–descendant gap 2, gap 3+, and cousin SPLIT by
+LCA depth (LCA = root vs LCA >= 1, the entry 2d-e could not resolve);
+plus the full table by tree distance (d1−l)+(d2−l). Correlation =
+mean error product / pooled mean-square error. Even/odd game split
+(int(gh[-1],16) % 2) as always. Cluster bootstrap over games for the
+headline classes. Secondary, non-gating readout: the same table on
+stErr-standardized errors (what a consumer that knows the head's
+sigma actually faces).
+
+Registered predictions:
+- P-2df1: ancestor–descendant correlation with OWN labels stays
+  materially above M1's sibling 0.26 — the flat noise curve is an
+  error-correlation fact, not a shared-label artifact.
+- P-2df2: every clean entry sits below its 2d-e drift-inflated
+  counterpart (sibling < 1.13, d2 < 0.87, d3+ < 0.67).
+- P-2df3: the cousin-at-root entry remains the smallest, and the
+  within-subtree minus cousin gap survives de-drifting — the contrast
+  principle's quantitative basis must hold about OWN values, not just
+  about a shared label.
+- P-2df4 (soft, the nested-field signature): among cousin pairs,
+  correlation increases with LCA depth; among ancestor–descendant
+  pairs, it decreases with gap.
+
+Scope: this rung is measurement only. No model fit, no engine change,
+no consumer touches. The sequence stands as registered in 2d-e:
+(i) this table; (ii) re-derive contrast noise and the allocation
+currency from the measured covariance (own registration — fitting a
+generative field, e.g. an AR-on-tree kernel, happens there and only
+against this table); (iii) the ladder again.
