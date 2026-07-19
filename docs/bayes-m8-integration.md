@@ -715,6 +715,30 @@ toward volatile contested lines; P-2dd2 replay pick quality improves
 over 2d-c specifically on positions whose chosen-line volatility is
 high; P-2dd3 the match ladder (64/16/32) at or above 2d-c's results.
 
+## 2d-c outcome (2026-07-18, append-only)
+
+P-2dc1 MET (breadth 2.6 / depth 10.9 over 324 positions — the shape
+finally inverts). P-2dc2 borderline (paired pick quality -0.0031, CI
+[-0.0090, +0.0022]: parity, not better; same-move 71.3%). **P-2dc3
+FAILS: B=64 -57, B=16 -61 (the +52 win does NOT survive
+own-allocation), B=32 -118.**
+
+The campaign-wide law this makes quantitative: Elo loss tracks the
+DIVERGENCE RATE from PUCT's move when divergence quality is neutral
+(~-2 Elo per % divergence: 36% -> -135, 29% -> -57, 5.9% -> -12).
+Parity-mean divergence is never free in the drawish komi-7
+environment. Therefore the explicit bar for ANY allocation/chooser
+change: divergences must be POSITIVE-MEAN (>= ~+0.005 labeled), or
+the configuration must reduce toward PUCT behavior. The B=16 win was
+the noise-reduction channel (rare, gated deviations vs PUCT's noisy
+visit-argmax), not a better-moves channel — recorded plainly.
+
+2d-d (volatility noise, already registered/implemented) proceeds as
+the next rung: per-arm observed volatility could raise divergence
+QUALITY (deviate only where volatility says the reference average is
+untrustworthy). Its ladder readouts decide against the explicit bar
+above.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
