@@ -602,14 +602,22 @@ Loc Search::getChosenMoveLoc() {
 
       std::vector<int64_t> cVisits(k, 0);
       std::vector<double> cAvg(k, -1.0);
+      std::vector<double> cVObs(k, -1.0);
       double s2sum = 0.0;
       int s2n = 0;
+      const double wlF = std::max(searchParams.winLossUtilityFactor, 1e-3);
       for(int j = 0; j < k; j++) {
         if(ss.child[j] != NULL) {
           NodeStats cst(ss.child[j]->stats);
           cVisits[j] = cst.visits;
-          if(cst.visits > 0 && cst.weightSum > 0.0)
+          if(cst.visits > 0 && cst.weightSum > 0.0) {
             cAvg[j] = 0.5 + 0.5 * cst.winLossValueAvg;
+            //M8 2d-d: realized subtree value variance, winrate scale
+            //(utility second moment, winloss-factor scaled; prototype
+            //approximation recorded in the doc).
+            double vu = std::max(cst.utilitySqAvg - cst.utilityAvg * cst.utilityAvg, 0.0);
+            cVObs[j] = 0.25 * vu / (wlF * wlF);
+          }
         }
         if(ss.evaled[j]) {
           double s = bayesSigmaFromStErr(ss.evalStErr[j]);
@@ -619,6 +627,17 @@ Loc Search::getChosenMoveLoc() {
       }
       double vbar = s2n > 0 ? s2sum / (double)s2n
                             : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
+      //M8 2d-d per-arm evidence noise: head claim at n <= 2, observed
+      //volatility (floored by a quarter of the head claim) at n >= 3;
+      //no division by n (the 2d-b flat curve).
+      auto armNoise = [&](int j) -> double {
+        double sHead = ss.evaled[j] ? bayesSigmaFromStErr(ss.evalStErr[j])
+                                    : std::sqrt(vbar);
+        double s2 = sHead * sHead;
+        if(cVisits[j] >= 3 && cVObs[j] >= 0.0)
+          return std::max(cVObs[j], 0.25 * s2);
+        return s2;
+      };
 
       int rIdx = 0;
       for(int j = 1; j < k; j++) {
@@ -629,7 +648,7 @@ Loc Search::getChosenMoveLoc() {
       double Lr, vLr;
       if(cVisits[rIdx] >= 1 && cAvg[rIdx] >= 0.0) {
         Lr = 0.5 + mover * (cAvg[rIdx] - 0.5);
-        vLr = vbar / (double)std::max(cVisits[rIdx], (int64_t)1);
+        vLr = armNoise(rIdx);
       }
       else {
         Lr = 0.5 + mover * (rootNode->bayesState->anchMu - 0.5);
@@ -649,15 +668,14 @@ Loc Search::getChosenMoveLoc() {
         bool haveEv = false;
         if(cVisits[j] >= 1 && cAvg[j] >= 0.0) {
           y = 0.5 + mover * (cAvg[j] - 0.5) - Lr;
-          nv = std::max((1.0 - rho) * vbar / (double)std::max(cVisits[j], (int64_t)1)
-                        + (1.0 - rho) * vLr, 1e-9);
+          nv = std::max((1.0 - rho) * (armNoise(j) + vLr), 1e-9);
           haveEv = true;
         }
         else if(ss.evaled[j]) {
           double s2 = bayesSigmaFromStErr(ss.evalStErr[j]);
           s2 = s2 * s2;
           y = 0.5 + mover * (ss.evalWinrate[j] - 0.5) - Lr;
-          nv = std::max((1.0 - rho) * s2 + (1.0 - rho) * vLr, 1e-9);
+          nv = std::max((1.0 - rho) * (s2 + vLr), 1e-9);
           haveEv = true;
         }
         else {

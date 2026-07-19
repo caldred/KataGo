@@ -555,14 +555,20 @@ void Search::bayesSelectBestChildToDescend(
                           + searchParams.bayesSigmaDB * std::log(std::max(stNode * stNode, 1e-8)));
     std::vector<int64_t> nVis(ss.k, 0);
     std::vector<double> cAvg(ss.k, -1.0);
+    std::vector<double> cVObs(ss.k, -1.0);
     double s2sum = 0.0;
     int s2n = 0;
+    const double wlF = std::max(searchParams.winLossUtilityFactor, 1e-3);
     for(int j = 0; j < ss.k; j++) {
       if(ss.child[j] != NULL) {
         NodeStats cst(ss.child[j]->stats);
         nVis[j] = cst.visits;
-        if(cst.visits > 0 && cst.weightSum > 0.0)
+        if(cst.visits > 0 && cst.weightSum > 0.0) {
           cAvg[j] = 0.5 + 0.5 * cst.winLossValueAvg;
+          //M8 2d-d realized subtree value variance (winrate scale).
+          double vu = std::max(cst.utilitySqAvg - cst.utilityAvg * cst.utilityAvg, 0.0);
+          cVObs[j] = 0.25 * vu / (wlF * wlF);
+        }
       }
       if(ss.evaled[j]) {
         double s = bayesSigmaFromStErr(ss.evalStErr[j]);
@@ -572,13 +578,22 @@ void Search::bayesSelectBestChildToDescend(
     }
     double vbar = s2n > 0 ? s2sum / (double)s2n
                           : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
+    //M8 2d-d per-arm evidence noise (same rule as the chooser).
+    auto armNoise = [&](int j) -> double {
+      double sHead = ss.evaled[j] ? bayesSigmaFromStErr(ss.evalStErr[j])
+                                  : std::sqrt(vbar);
+      double s2h = sHead * sHead;
+      if(nVis[j] >= 3 && cVObs[j] >= 0.0)
+        return std::max(cVObs[j], 0.25 * s2h);
+      return s2h;
+    };
     int rIdx = 0;
     for(int j = 1; j < ss.k; j++) {
       if(nVis[j] > nVis[rIdx] || (nVis[j] == nVis[rIdx] && ss.prior[j] > ss.prior[rIdx]))
         rIdx = j;
     }
     double vLr = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
-                 ? vbar / (double)std::max(nVis[rIdx], (int64_t)1)
+                 ? armNoise(rIdx)
                  : node.bayesState->anchVar;
     double Lr = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
                 ? 0.5 + moverSign * (cAvg[rIdx] - 0.5)
@@ -595,8 +610,8 @@ void Search::bayesSelectBestChildToDescend(
       bool haveEv = false;
       if(nVis[j] >= 1 && cAvg[j] >= 0.0) {
         y = 0.5 + moverSign * (cAvg[j] - 0.5) - Lr;
-        nv = (1.0 - rho) * (vbar / (double)nVis[j] + vLr);
-        nvNext = (1.0 - rho) * (vbar / (double)(nVis[j] + 1) + vLr);
+        nv = (1.0 - rho) * (armNoise(j) + vLr);
+        nvNext = nv;  //2d-c: D dropped; kept only for dead-code symmetry
         haveEv = true;
       }
       else if(ss.evaled[j]) {
@@ -604,7 +619,7 @@ void Search::bayesSelectBestChildToDescend(
         s2 = s2 * s2;
         y = 0.5 + moverSign * (ss.evalWinrate[j] - 0.5) - Lr;
         nv = (1.0 - rho) * (s2 + vLr);
-        nvNext = (1.0 - rho) * (vbar + vLr);  //next visit starts the subtree avg
+        nvNext = nv;
         haveEv = true;
       }
       if(haveEv) {
