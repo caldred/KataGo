@@ -638,6 +638,31 @@ fit fails its held-out calibration ([0.7, 1.4] band by visit bucket),
 neither consumer changes and the myopia problem needs a structural
 (non-myopic) treatment instead.
 
+## 2d-b outcome (2026-07-18, append-only)
+
+4,570 (visits, sqerr) samples from the existing dumps x label pools.
+**The empirical contrast-error curve is nearly FLAT: err 0.202 at
+n=1 -> 0.159 at n=40; fitted err^2(n) = 0.0514 n^-0.15 + 0 —
+p = 0.15 vs the model's assumed p = 1.** The engine's noise model
+overclaims precision ~50x at n=50 (claimed 0.0006 vs measured 0.0286).
+Registered prediction p < 1: CONFIRMED decisively (c fit to 0: at
+p = 0.15 the power law IS the floor over this range). This single
+mis-shape explains both 2d's breadth pathology (deepening's marginal
+value ~1/n^2 under the model vs ~n^-1.15 in reality) and the high-B
+phantom-precision anomaly.
+
+Held-out calibration: 5/8 buckets in [0.7, 1.4]; three OUT, all on
+the conservative side (0.62-0.66) — per the registered rule the
+parametric fit DOES NOT SHIP into the consumers yet. Suspected cause:
+position heterogeneity flattening the pooled curve (each position has
+its own error scale). Next (own registration before running): the
+normalized variant — fit the RATIO curve err^2(n)/err^2(1) with
+per-position scale from the sigma heads — then, if in band, consume
+in the 2c-b gate noise model and the 2d allocator D, and re-smoke
+tree shape. Caveats recorded: n <= 64 range only; labels share the
+net's systematic bias with the averages, so absolute levels are
+understated — the SHAPE in n is the load-bearing measurement.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
