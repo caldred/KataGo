@@ -537,31 +537,161 @@ void Search::bayesSelectBestChildToDescend(
     }
   }
 
-  //Contested: overlap density at the root, p_argmax weights w_j at interior
-  //nodes (bmcts _decision_scores).
-  std::vector<double> contested;
-  if(isRoot) {
-    const bool minRoot = (node.nextPla == P_BLACK);
-    std::vector<double> mus(ss.k), tot(ss.k);
+  //Score vector: M3 voi-KG (contested x D on the set state) or M8 2d
+  //contrast-voi (contested x D in contrast units; docs/bayes-m8-integration
+  //.md 2d registration).
+  const double moverSign = (node.nextPla == P_WHITE) ? 1.0 : -1.0;
+  std::vector<double> scoreV(ss.k, 0.0);
+  std::vector<double> tieV(ss.k, 0.0);
+  std::vector<bool> resolvedV(ss.k, false);
+  if(searchParams.useBayesContrastSelection) {
+    //---- Contrast state (mover persp; mirrors the 2a chooser) ----
+    const double rho = searchParams.bayesRho;
+    const NNOutput* nnOut = node.getNNOutput();
+    double stNode = nnOut != NULL ? 0.5 * (double)nnOut->shorttermWinlossError : 0.0;
+    if(stNode <= 1e-8)
+      stNode = searchParams.bayesDefaultSigma;
+    double sr2 = std::exp(searchParams.bayesSigmaDA
+                          + searchParams.bayesSigmaDB * std::log(std::max(stNode * stNode, 1e-8)));
+    std::vector<int64_t> nVis(ss.k, 0);
+    std::vector<double> cAvg(ss.k, -1.0);
+    double s2sum = 0.0;
+    int s2n = 0;
     for(int j = 0; j < ss.k; j++) {
-      //Total variance per entry, the same total the backup sees: frozen
-      //children b^2*vsOwn + vPriv, virtual entries b^2*vX + vPriv.
-      bool frozen = ss.child[j] != NULL && ss.child[j]->bayesState != NULL
-                    && ss.child[j]->bayesState->anchorFrozen;
-      double vShared = frozen ? ss.child[j]->bayesState->vsOwn : ss.vX;
-      tot[j] = ss.b[j] * ss.b[j] * vShared + ss.vPriv[j];
-      mus[j] = minRoot ? -ss.mu[j] : ss.mu[j];
+      if(ss.child[j] != NULL) {
+        NodeStats cst(ss.child[j]->stats);
+        nVis[j] = cst.visits;
+        if(cst.visits > 0 && cst.weightSum > 0.0)
+          cAvg[j] = 0.5 + 0.5 * cst.winLossValueAvg;
+      }
+      if(ss.evaled[j]) {
+        double s = bayesSigmaFromStErr(ss.evalStErr[j]);
+        s2sum += s * s;
+        s2n++;
+      }
     }
-    contested = BayesPosterior::overlapDensity(mus, tot);
+    double vbar = s2n > 0 ? s2sum / (double)s2n
+                          : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
+    int rIdx = 0;
+    for(int j = 1; j < ss.k; j++) {
+      if(nVis[j] > nVis[rIdx] || (nVis[j] == nVis[rIdx] && ss.prior[j] > ss.prior[rIdx]))
+        rIdx = j;
+    }
+    double vLr = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
+                 ? vbar / (double)std::max(nVis[rIdx], (int64_t)1)
+                 : node.bayesState->anchVar;
+    double Lr = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
+                ? 0.5 + moverSign * (cAvg[rIdx] - 0.5)
+                : 0.5 + moverSign * (node.bayesState->anchMu - 0.5);
+    double logPr = std::log(std::max(ss.prior[rIdx], 1e-12));
+    const double pv = 2.0 * sr2;
+    std::vector<double> gm(ss.k, 0.0), gv(ss.k, 1e-12), gvNext(ss.k, 1e-12);
+    for(int j = 0; j < ss.k; j++) {
+      if(j == rIdx)
+        continue;
+      double pm = searchParams.bayesDMean
+                  * (std::log(std::max(ss.prior[j], 1e-12)) - logPr);
+      double y = 0.0, nv = 0.0, nvNext = 0.0;
+      bool haveEv = false;
+      if(nVis[j] >= 1 && cAvg[j] >= 0.0) {
+        y = 0.5 + moverSign * (cAvg[j] - 0.5) - Lr;
+        nv = (1.0 - rho) * (vbar / (double)nVis[j] + vLr);
+        nvNext = (1.0 - rho) * (vbar / (double)(nVis[j] + 1) + vLr);
+        haveEv = true;
+      }
+      else if(ss.evaled[j]) {
+        double s2 = bayesSigmaFromStErr(ss.evalStErr[j]);
+        s2 = s2 * s2;
+        y = 0.5 + moverSign * (ss.evalWinrate[j] - 0.5) - Lr;
+        nv = (1.0 - rho) * (s2 + vLr);
+        nvNext = (1.0 - rho) * (vbar + vLr);  //next visit starts the subtree avg
+        haveEv = true;
+      }
+      if(haveEv) {
+        nv = std::max(nv, 1e-9);
+        nvNext = std::max(nvNext, 1e-9);
+        double w = pv / (pv + nv);
+        gm[j] = pm + w * (y - pm);
+        gv[j] = pv * nv / (pv + nv);
+        gvNext[j] = pv * nvNext / (pv + nvNext);
+      }
+      else {
+        gm[j] = pm;
+        gv[j] = pv;
+        double nv1 = std::max((1.0 - rho) * (vbar + vLr), 1e-9);
+        gvNext[j] = pv * nv1 / (pv + nv1);
+      }
+    }
+    //Reference visit: vLr' tightens every arm's evidence noise.
+    double vLrNext = vbar / (double)(std::max(nVis[rIdx], (int64_t)0) + 1);
+    double dRef = 0.0;
+    for(int j = 0; j < ss.k; j++) {
+      if(j == rIdx || ss.terminalEvaled[j])
+        continue;
+      double nv2;
+      if(nVis[j] >= 1 && cAvg[j] >= 0.0)
+        nv2 = (1.0 - rho) * (vbar / (double)nVis[j] + vLrNext);
+      else if(ss.evaled[j]) {
+        double s2 = bayesSigmaFromStErr(ss.evalStErr[j]);
+        nv2 = (1.0 - rho) * (s2 * s2 + vLrNext);
+      }
+      else
+        continue;  //prior-only arms carry no Lr term yet
+      nv2 = std::max(nv2, 1e-9);
+      double v2 = pv * nv2 / (pv + nv2);
+      dRef += std::max(gv[j] - v2, 0.0);
+    }
+    //Contested weights + overlap from the contrast field (ref at 0).
+    std::vector<double> fieldMu(ss.k), fieldVar(ss.k);
+    for(int j = 0; j < ss.k; j++) {
+      fieldMu[j] = (j == rIdx) ? 0.0 : gm[j];
+      fieldVar[j] = (j == rIdx) ? 1e-12 : gv[j];
+    }
+    std::vector<double> contested = isRoot
+      ? BayesPosterior::overlapDensity(fieldMu, fieldVar)
+      : [&]() {
+          double m, v;
+          std::vector<double> w;
+          BayesPosterior::clarkMaxAndWeights(fieldMu, fieldVar, m, v, w);
+          return w;
+        }();
+    for(int j = 0; j < ss.k; j++) {
+      double D = (j == rIdx) ? dRef : std::max(gv[j] - gvNext[j], 0.0);
+      scoreV[j] = contested[j] * D;
+      tieV[j] = (j == rIdx) ? 0.0 : gm[j];
+      resolvedV[j] = (D <= 1e-18);
+    }
   }
   else {
-    contested = ss.w;
+    //Contested: overlap density at the root, p_argmax weights w_j at interior
+    //nodes (bmcts _decision_scores).
+    std::vector<double> contested;
+    if(isRoot) {
+      const bool minRoot = (node.nextPla == P_BLACK);
+      std::vector<double> mus(ss.k), tot(ss.k);
+      for(int j = 0; j < ss.k; j++) {
+        //Total variance per entry, the same total the backup sees: frozen
+        //children b^2*vsOwn + vPriv, virtual entries b^2*vX + vPriv.
+        bool frozen = ss.child[j] != NULL && ss.child[j]->bayesState != NULL
+                      && ss.child[j]->bayesState->anchorFrozen;
+        double vShared = frozen ? ss.child[j]->bayesState->vsOwn : ss.vX;
+        tot[j] = ss.b[j] * ss.b[j] * vShared + ss.vPriv[j];
+        mus[j] = minRoot ? -ss.mu[j] : ss.mu[j];
+      }
+      contested = BayesPosterior::overlapDensity(mus, tot);
+    }
+    else {
+      contested = ss.w;
+    }
+    for(int j = 0; j < ss.k; j++) {
+      scoreV[j] = contested[j] * ss.D[j];
+      tieV[j] = moverSign * ss.mu[j];
+      resolvedV[j] = (ss.D[j] <= 1e-18);
+    }
   }
 
-  //Deterministic argmax of contested_j x D_j over viable entries; exact
-  //score ties break toward the better mover mean (mover = node.nextPla;
-  //mus are white-perspective).
-  const double moverSign = (node.nextPla == P_WHITE) ? 1.0 : -1.0;
+  //Deterministic argmax of the score over viable entries; exact score ties
+  //break toward the better mover mean.
   int bestJ = -1;
   double bestScore = 0.0;
   double bestMoverMu = 0.0;
@@ -574,11 +704,11 @@ void Search::bayesSelectBestChildToDescend(
     else if(ss.terminalEvaled[j])
       viable = false; //terminal children with revealed values are never selected
     else
-      viable = ss.D[j] > 1e-18;  //exhausted subtrees are resolved
+      viable = !resolvedV[j];  //exhausted/resolved entries are done
     if(!viable)
       continue;
-    double score = contested[j] * ss.D[j];
-    double moverMu = moverSign * ss.mu[j];
+    double score = scoreV[j];
+    double moverMu = tieV[j];
     if(bestJ < 0 || score > bestScore || (score == bestScore && moverMu > bestMoverMu)) {
       bestJ = j;
       bestScore = score;

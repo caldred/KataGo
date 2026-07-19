@@ -567,6 +567,9 @@ vector<SearchParams> Setup::loadParams(
     if(cfg.contains("bayesContrastDeviationZ"+idxStr)) params.bayesContrastDeviationZ = cfg.getDouble("bayesContrastDeviationZ"+idxStr, 0.0, 10.0);
     else if(cfg.contains("bayesContrastDeviationZ"))   params.bayesContrastDeviationZ = cfg.getDouble("bayesContrastDeviationZ", 0.0, 10.0);
     else                                               params.bayesContrastDeviationZ = 0.0;
+    if(cfg.contains("useBayesContrastSelection"+idxStr)) params.useBayesContrastSelection = cfg.getBool("useBayesContrastSelection"+idxStr);
+    else if(cfg.contains("useBayesContrastSelection"))   params.useBayesContrastSelection = cfg.getBool("useBayesContrastSelection");
+    else                                                 params.useBayesContrastSelection = false;
     if(cfg.contains("bayesRho"+idxStr)) params.bayesRho = cfg.getDouble("bayesRho"+idxStr, 0.0, 0.99);
     else if(cfg.contains("bayesRho"))   params.bayesRho = cfg.getDouble("bayesRho", 0.0, 0.99);
     else                                params.bayesRho = 0.0;

@@ -625,6 +625,10 @@ void Search::beginSearch(bool pondering) {
   }
   if(searchParams.useBayesSelection && !searchParams.useBayesSearch)
     throw StringError("useBayesSelection requires useBayesSearch (the voi-KG scores are computed from the Bayesian posterior side state)");
+  if(searchParams.useBayesContrastSelection && !searchParams.useBayesSearch)
+    throw StringError("useBayesContrastSelection requires useBayesSearch (docs/bayes-m8-integration.md 2d)");
+  if(searchParams.useBayesContrastSelection && searchParams.useBayesSelection)
+    throw StringError("useBayesContrastSelection and useBayesSelection are mutually exclusive");
 
   rootBoard.checkConsistency();
 

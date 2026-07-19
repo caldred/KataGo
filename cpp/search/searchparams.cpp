@@ -42,6 +42,7 @@ SearchParams::SearchParams()
    useBayesChooseMu(false),
    useBayesContrastChooser(false),
    bayesContrastDeviationZ(0.0),
+   useBayesContrastSelection(false),
    bayesRho(0.0),
    bayesSigmaA(0.0),
    bayesSigmaB(1.0),
@@ -174,6 +175,7 @@ bool SearchParams::operator==(const SearchParams& other) const {
     useBayesChooseMu == other.useBayesChooseMu &&
     useBayesContrastChooser == other.useBayesContrastChooser &&
     bayesContrastDeviationZ == other.bayesContrastDeviationZ &&
+    useBayesContrastSelection == other.useBayesContrastSelection &&
     bayesRho == other.bayesRho &&
     bayesSigmaA == other.bayesSigmaA &&
     bayesSigmaB == other.bayesSigmaB &&
@@ -430,6 +432,7 @@ json SearchParams::changeableParametersToJson() const {
   ret["useBayesChooseMu"] = useBayesChooseMu;
   ret["useBayesContrastChooser"] = useBayesContrastChooser;
   ret["bayesContrastDeviationZ"] = bayesContrastDeviationZ;
+  ret["useBayesContrastSelection"] = useBayesContrastSelection;
   ret["bayesRho"] = bayesRho;
   ret["bayesSigmaA"] = bayesSigmaA;
   ret["bayesSigmaB"] = bayesSigmaB;
@@ -589,6 +592,7 @@ void SearchParams::printParams(std::ostream& out) const {
   PRINTPARAM(useBayesChooseMu);
   PRINTPARAM(useBayesContrastChooser);
   PRINTPARAM(bayesContrastDeviationZ);
+  PRINTPARAM(useBayesContrastSelection);
   PRINTPARAM(bayesRho);
   PRINTPARAM(bayesSigmaA);
   PRINTPARAM(bayesSigmaB);

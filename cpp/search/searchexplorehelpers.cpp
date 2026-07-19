@@ -329,10 +329,11 @@ void Search::selectBestChildToDescend(
 {
   assert(thread.pla == node.nextPla);
 
-  //M3 Bayesian voi-KG selection fork (docs/bayes-m3-gate.md). Early playouts
-  //before the node's bayes anchor exists (e.g. the root before its first
-  //recompute) fall through cleanly to the PUCT code below.
-  if(searchParams.useBayesSelection) {
+  //M3 Bayesian voi-KG selection fork (docs/bayes-m3-gate.md); M8 2d
+  //contrast-voi selection shares the same entry (the fork dispatches
+  //internally on useBayesContrastSelection). Early playouts before the
+  //node's bayes anchor exists fall through cleanly to the PUCT code below.
+  if(searchParams.useBayesSelection || searchParams.useBayesContrastSelection) {
     if(node.getNNOutput() != NULL && node.bayesState != NULL && node.bayesState->anchorFrozen) {
       bayesSelectBestChildToDescend(thread,node,nodeState,numChildrenFound,bestChildIdx,bestChildMoveLoc,countEdgeVisit,isRoot);
       return;
