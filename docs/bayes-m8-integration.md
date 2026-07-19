@@ -550,6 +550,29 @@ some budget — any point outside [-40, +40] gets the N = 1000
 confirmation rule before being treated as real. All results reported.
 Output: bayes-data/match-m8-2cd-B<N>/ (append-only).
 
+## 2c-d outcome (2026-07-18, append-only)
+
+  B=256: -21 (W9/L27/D264) | B=1024: -19 (W35/L51/D214) |
+  B=2048: -43 (W20/L57/D223; ~+/-16 at 1 sigma — OUTSIDE the band,
+  N=1000 confirmation launched per the registered rule; not treated
+  as real until it reports).
+
+Prediction (2) holds through B=1024 (parity everywhere above the
+B=32 dip). Prediction (1) VIOLATED: draw rate fell 88% -> 71% -> 74%
+from 256 up — deeper search converts small edges rather than
+saturating to draws, and the extra decisive games lean against us.
+
+Registered attribution lead (for the 2048 anomaly AND possibly the
+B=32 dip, same shape from the other side): the contrast noise model
+has NO ERROR FLOOR — evidence noise ~ vbar/visits means claimed
+precision grows without bound while the net's systematic biases do
+not average away; at high B the gate's z clears threshold on
+systematic-bias differences and "confident" deviations turn
+label-negative against an increasingly-correct reference. Measurable
+by an M5-style contrast-calibration-by-visit-bucket study on labeled
+replay data; the fix, if confirmed, is a derived floor term in the
+contrast noise (label-pinned, never Elo-tuned).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
