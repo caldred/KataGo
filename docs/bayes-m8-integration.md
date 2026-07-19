@@ -767,6 +767,36 @@ noise curve (p = 0.15), resolution-limited information, the
 contrast/bias-invariance principle, and the observable-volatility
 hypothesis (open pending a clean proxy).
 
+## 2d-e registration (the tree variogram; Cal's identification,
+## 2026-07-19; appended before the measurement runs)
+
+Identification: the p = 0.15 noise curve and "correlation between a
+position's evals and its descendants' evals" are the same measurement
+— err^2(avg_n) = sigma^2 [rho_bar + (1 - rho_bar)/n], so a flat curve
+IS high within-subtree error correlation (plus a non-stationary tail
+where the subtree's values drift from the arm's own — the max-vs-mean
+population). The model measured sibling correlation (rho = 0.26) and
+assumed within-subtree correlation ZERO (the /n); reality inverts
+this: within-subtree is the LARGEST entry. The correct noise model
+for every consumer is the single underlying object: the covariance of
+eval errors as a function of TREE RELATIONSHIP (nested random-effects
+/ variogram over the tree).
+
+Measurement (existing data only): from the m8-audit full-tree dumps
+(every node's first eval + structure) x root-arm labels: for each
+labeled root arm, treat descendant evals' mover-corrected deviations
+from the arm's label as error proxies (recorded caveat: interior
+minimax drift inflates deep-relationship entries — reported, not
+corrected, in this first pass); compute error products by
+relationship class: (i) parent-child, (ii) siblings (validation
+against M1's 0.26), (iii) same-subtree depth-2/3+, (iv) cousins
+(different root arms, same position — the cross-subtree entry that
+sets what contrasts do NOT cancel). Even/odd game split as always.
+Registered predictions: P-2de1 within-subtree correlation >>
+sibling 0.26; P-2de2 cousin correlation is materially lower than
+within-subtree (this gap is the contrast principle's quantitative
+justification and the ceiling on contrast-evidence quality).
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
