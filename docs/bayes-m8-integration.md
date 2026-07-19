@@ -601,3 +601,44 @@ Registered predictions:
   deviation window (gate opens before the posterior earns it).
 All results reported, append-only, run on the laptop (Eigen) while
 the desktop runs 2c-d.
+
+## 2c-e outcome (2026-07-18, laptop, append-only) — deflation hypothesis
+## REFUTED; the B=16 headline stands; margin structure is about deviation
+## QUALITY, not quantity
+
+Policy-baseline curve (raw policy vs stock PUCT, n=300/cell, temp 0):
+B=8 -27 +/- 20, B=16 -36 +/- 20, B=32 -62 +/- 20, B=64 -139 +/- 22.
+
+- **P1 (Cal's lore) FALSIFIED**: the raw policy loses to PUCT even at
+  8 visits, on this net/9x9/temp-0 protocol. The lore may hold for
+  older nets or 19x19; not here.
+- **P2 CONFIRMED**: monotone decline, far below the parity band by 64.
+- **P3 (decisive): the 2c-c B=16 headline STANDS.** machineryMargin =
+  CBTS - policy: ~-21 (B=8), **+88 (B=16)**, ~-23 (B=32),
+  **+127 (B=64)** — the B=16 and B=64 margins are > 3 SE positive.
+  Not anchor-dominated; no retraction; the boundary-case n=1000 rule
+  was not triggered (margin >> 2 SE).
+- **P4 MISSED as registered**: gated deviation rate at B=16 is 13.3%
+  (predicted < 10%), and the rise to B=32 (18.3%) is mild, not
+  substantial (n=60/cell, ~+/-5%; B=64: 16.7%). The registered
+  "gate-mostly-shut" mechanism is wrong in detail. What the data
+  supports instead: deviation RATE is roughly flat in budget; the
+  margin swings (+88 / -23 / +127) are deviation QUALITY. Hypothesis
+  for the B=32 window (registered as hypothesis only, for the
+  testbed/desktop): at 16 the contrasts clearing z* are first-eval-vs-
+  prior cases (crisp); at 32, 2-3-visit subtree averages feed the
+  contrasts — the partial-verification noise regime M7 identified —
+  and at 64 verified-line credit stabilizes.
+
+Protocol notes, owned: (1) the B=64 cell's output dir was contaminated
+by an accidental duplicate relaunch AFTER the registered run completed;
+the second run is VOID (near-duplicate deterministic games — 7,915
+total NN evals for "300 games" proves cache-replay) and scored
+separately (-32) only to document the contamination; the registered
+first run (-139) is separable by file mtime. (2) A real engine bug
+surfaced: with useBayesSearch and numSearchThreads > 1, the beginSearch
+guard fires on the ASYNC search thread and gtp hangs silently in
+waitForSearchToEnd instead of reporting the error — the guard should
+run before the async spawn (desktop-side fix suggested).
+Artifacts: docs/bayes-m8-2ce-telemetry.json; match dirs
+bayes-data/match-2ce-B{8,16,32,64}.
