@@ -613,6 +613,31 @@ positive = the win signal); (iii) matches: B = 64 first (P-2d3:
 non-inferior, >= -40; positive at N = 1000 = THE WIN), then the
 budget curve. Elo tunes nothing, as always.
 
+## 2d smoke outcome + 2d-b registration (appended before the fit runs)
+
+**P-2d1 FAILS**: contrast-voi builds breadth 12-55 / depth 3-4 trees —
+the M3 shallow-broad pathology in contrast units. Diagnosis: (i) the
+one-step KG is myopic — a first touch always kills more variance than
+a deepening step; (ii) the evidence-noise model vbar/n makes
+deepening's marginal value decay ~1/n^2, far faster than reality.
+Both the 2c-d high-B anomaly (claimed precision without a floor) and
+this allocation failure (claimed precision growing too fast in n) are
+the SAME modeling error from opposite ends: the noise curve
+nv(n) = (1-rho) vbar / n is wrong in shape.
+
+2d-b (the noise-curve study, registered): fit the EMPIRICAL contrast
+error vs subtree visits from existing data — the m8-audit full-tree
+dumps carry childAvg at every visit count for hundreds of arms whose
+deep labels are in the m5/m7/m8 pools. Fit |avg_n - label| structure
+as nv(n) = a * n^(-p) + c in LOG space (the v7 lesson), held-out by
+game parity (even fit / odd validate, M1-style). The fitted curve
+replaces vbar/n in BOTH the 2c-b gate's noise model and the 2d
+allocator's D. Registered predictions: p < 1 (slower-than-1/n decay:
+correlated subtree evidence), c > 0 (systematic-bias floor). If the
+fit fails its held-out calibration ([0.7, 1.4] band by visit bucket),
+neither consumer changes and the myopia problem needs a structural
+(non-myopic) treatment instead.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation

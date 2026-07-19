@@ -194,7 +194,8 @@ def main():
 
     bot_cfgs = {"bayes": "bayes_m7_gtp.cfg", "puct": "puct_m7_gtp.cfg",
                 "hybrid": "hybrid_m7_gtp.cfg",
-                "contrast": "contrast_m8_gtp.cfg"}
+                "contrast": "contrast_m8_gtp.cfg",
+                "contrastvoi": "contrastvoi_m8_gtp.cfg"}
     names = args.bots.split(",")
     bots = {n: GtpBot(args.katago, CFG_DIR / bot_cfgs[n], args.model, n)
             for n in names}
