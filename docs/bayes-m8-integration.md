@@ -565,3 +565,39 @@ Output: bayes-data/match-m8-2cd-B<N>/ (append-only).
 Scripts: python/bayes_m8_audit_all.py (dump collection),
 bmcts scripts/m8_counterfactual.py (re-integration), written after
 this doc's commit. Results append-only as always.
+
+## 2c-e registration (policy-baseline control; laptop, appended before
+## any run)
+
+Cal's deflation hypothesis (2026-07-18): production never runs below
+~1000 visits, and the raw policy is known (to Cal) to outplay MCTS at
+very low visit counts — so the 2c-c B=16 win may be the POLICY
+ANCHOR's win: at 16 evals the z* = 1.25 gate rarely fires and the
+gated chooser ~= a raw-policy bot, while 16-visit PUCT actively hurts
+itself stirring thin-search noise into a strong prior. No raw-policy
+control exists anywhere in the M7/M8 record; the 2c-c "the calibrated
+contrast posterior is the only informative statistic available — and
+it wins" reading is unsupported until this control runs.
+
+Protocol (2c-c verbatim except bots): bot0 = stock PUCT at the cell
+budget; bot1 = raw-policy bot (maxVisits = 1, all bayes flags off);
+temp 0 both; n = 300 per cell; cells in order B = 16, 32, 8, 64.
+Plus deviation telemetry: gated contrast chooser (2c-b flags) on 60
+fresh positions (seed base 500500), B in {16, 32, 64}: fraction of
+chosen moves differing from the policy argmax.
+
+Registered predictions:
+- P1 (Cal): policy bot >= parity vs PUCT at B = 8 and 16.
+- P2: policy-vs-PUCT Elo declines monotonically in B; below the
+  [-40, +40] parity band by B = 64.
+- P3 (decisive readout): machineryMargin(16) := CBTS Elo(+52) minus
+  policyElo(16), reported with CI. If |machineryMargin| < 2 SE the
+  B=16 headline is anchor-dominated and the 2c-c regime reading is
+  RETRACTED in favor of "the gate correctly inherits the policy's
+  low-budget strength that PUCT destroys"; confirmation rule: that
+  boundary case triggers n = 1000 on the B=16 cell.
+- P4 (unified 16/32/64 story): gated deviation rate < 10%/move at
+  B=16, rising substantially by B=32 — the -85 dip = the immature-
+  deviation window (gate opens before the posterior earns it).
+All results reported, append-only, run on the laptop (Eigen) while
+the desktop runs 2c-d.
