@@ -943,6 +943,41 @@ Scripts: python/bayes_m8_theta_lines.py (collection),
 bmcts scripts/m8_theta_fit.py (fit), written after this commit.
 Output bayes-data/m8-theta-lines.jsonl, append-only.
 
+## 2d-h outcome (2026-07-19, append-only) — THE FADE IS REAL
+
+60 lines (40 live, 30 reaching 20+ plies; dead starts = decided
+lost-game positions, wasteful not biasing). Pooled err var 0.0215.
+Corr by gap: 0.48/0.59 (1-2) -> 0.36 (3-5) -> 0.19 (5-8) -> 0.12
+(8-17) -> 0.017 (17-23, CI [-0.12, +0.16]) -> 0.08 (23-31, noise).
+**P-2dh2 DECIDED FOR FADE: corr(20-bucket) = 0.017 << 0.45. Fit:
+corr(g) = 0.000 + 0.605 x 0.875^g — half-life 5.2 plies; the
+board-wide component fits to ZERO at this horizon.** Twenty plies of
+strong play launder the original misjudgment essentially completely.
+
+P-2dh1 PARTIALLY MISSED, informatively: at overlapping gaps (1-3)
+these strong-play lines give 0.48-0.36 where 2d-f's search-tree pairs
+gave ~0.7 flat — a real population difference. Reading: strong play
+RESOLVES questions (fast fade); search trees DWELL on unresolved
+branches (slow fade). Both datasets are right about their own
+populations; engine subtrees resemble the latter, engine PVs the
+former. Pooled error variance also differs 3x (0.0215 vs 0.0602) —
+same heterogeneity. P-2dh3 mixed: sideline cross-fork corr +0.206
+(vs fitted G = 0; sidelines share fork context and span mixed gaps —
+not over-read). Caveats owned: stop-at-decided censors pairs at
+resolution events; even/odd unstable at 30-line clusters.
+
+Design consequence (the budget-general architecture): the LAW is
+geometric fade along lines + near-complete shedding at forks; the
+RATE is population-dependent, so no global constant is admissible —
+which the accumulator design never needed anyway. Next rung (own
+registration): per-node running tallies applying fade edge-by-edge
+over the actual tree (dwelling unresolved subtrees keep high
+correlated-noise floors automatically; deep resolving lines shed them
+automatically; budget appears nowhere), with local fade tied to
+observables (the stErr head predicts unresolvedness) rather than a
+pinned theta. 2d-g's fixed floor stays as the validated shallow-limit
+until the accumulators pass their own ladder.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
