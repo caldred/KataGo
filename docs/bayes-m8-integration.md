@@ -1572,3 +1572,50 @@ tracks 1/n after all under the kernel), the kernel's allocation
 story is wrong even though its chooser pricing is right — record
 it, keep 2d-i ship state, and the voi arm stays closed at parity-
 minus until a new mechanism is found.
+
+## 2d-k Step 1 outcome (2026-07-20, append-only) — NO MODEL PINNED;
+## Step 2 does not proceed; the gate holds
+
+40 audited contrastvoi trajectories, 2,416 per-eval root-arm events
+(bmcts scripts/m8_2dk_deltavar.py + scratch persistence/reducible
+cuts). What the registered candidates met:
+- Dwelling is REAL at the mean level: median realized DeltaVar/Var
+  = +1.9% per eval, 38% of evals < 2% (1/n pricing predicts 3-10%
+  every eval at these n); material (>10%) drops are a 14% tail.
+  P-2dk1's substance (the kernel's split exists) holds; its
+  "strongly bimodal + tip-observable" form was not established (the
+  new-leaf tip instrument has a gap: creation-playout leaves do not
+  dump; unmeasured).
+- M1 clone-null tracks levels better than M2 independent-entry
+  (median rel error 3.1% vs 5.2%); neither prices the tail.
+- Per-event predictability is poor: corr(last, next) = +0.03
+  Pearson (+0.37 Spearman); EMA best-on-median only.
+- REDUCIBLE-VARIANCE (Var - A(S/n)^2) is INVERTED: spearman -0.33;
+  arms NEAR their dwelling floor show the LARGEST drops (median
+  +16% when reducible < 0.1 vs +1.7% when > 0.3). Reading:
+  per-eval gains are RESOLUTION EVENTS THAT MOVE THE FLOOR — a
+  low-fade entry dilutes S/n, the asymptote itself falls, Var
+  follows. Information gain here is floor motion, not averaging
+  within a fixed correlation structure. This is 2d-b's
+  resolution-limited picture appearing INSIDE the kernel's own
+  accounting.
+- The best simple RANKER of realized gain is 1/(n+1): 63% of
+  positive DeltaVar mass in its top quartile (reducible: 7%).
+  Convergence worth recording plainly: within these trees,
+  "visit the less-visited" — the shape of PUCT's exploration
+  pressure — is the best cheap proxy for where the next unit of
+  information actually lands.
+
+Per the registered gate ("implemented only if Step 1 pins a
+model"): Step 2 DOES NOT PROCEED. Ship state remains 2d-i (chooser
+parity stack); the voi arm stays open with its deficit attributed
+(2d-i-b lock-in) and its currency question now sharply posed:
+the right E[DeltaVar] must price resolution-event probability
+(floor motion), for which the per-eval trajectory data exists but
+no registered candidate was adequate. Next-rung design space,
+recorded for the successor registration: (i) tip-instrumented
+resolution probability (fix the creation-playout dump gap, measure
+P(floor moves | tip stErr trajectory)); (ii) hybrid score
+contested_j x Var_j/(n_j+1) — the measured best ranker inside the
+decision-relevance frame, one line of code, no new constants,
+directly attacks lock-in; (iii) both, laddered. Elo tunes nothing.
