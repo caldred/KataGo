@@ -829,6 +829,46 @@ and allocation currency from it; (iii) the ladder again. The
 low-budget win (+52 at B=16) and standard-budget parity stand as the
 demonstrated results meanwhile.
 
+## 2d-f outcome (2026-07-19, append-only) — the clean variogram
+
+345 labeled nodes / 30 trees / 30 games (11.5 per position; below the
+runbook's loose 600-900 note, above the sanity floor; CI widths
+reflect it). Own-label errors, pooled err sd 0.245.
+
+By relationship (corr, [cluster-bootstrap 95% CI], n pairs):
+  sibling       0.607 [0.386, 0.794]  159
+  parent-child  0.712 [0.591, 0.808]  263
+  ad-gap2       0.668 [0.494, 0.816]  160
+  ad-gap3+      0.678 [0.515, 0.838]   59
+  cousin-near   0.299 [0.084, 0.482]  157
+  cousin-root   0.288 [0.037, 0.505] 1031
+By tree distance: 0.712 / 0.638 / 0.440 / 0.397 / 0.255 / 0.160 /
+0.053 (d = 1..7) — a monotone variogram decaying to ~0 by d ~ 7.
+Even/odd agreement: within-subtree entries stable (+/-0.05); cousin
+splits unstable (0.19/0.43 vs 0.43/0.10) — few independent games
+dominate; recorded.
+Secondary stErr-standardized table: same structure, slightly lower
+(sibling 0.52, cousins 0.19-0.27).
+
+Predictions: P-2df1 CONFIRMED (AD entries 0.67-0.71, CI lower bounds
+>= 0.49, far above sibling-0.26). P-2df2 2/3 CONFIRMED (sibling,
+gap-2 de-drift; gap-3+ 0.678 vs 0.674 indistinguishable — the
+expected deep-entry drift inflation did not materialize, possibly
+offset by the first pass's anchMu-clip attenuation). **P-2df3
+CONFIRMED — cousin-root smallest; the within-subtree-minus-cousin gap
+(~0.35 of variance) SURVIVES de-drifting: the contrast principle
+stands on measured ground; the derivation proceeds (no re-attribution
+stop).** P-2df4 MISSED informatively: AD correlation is PERSISTENT in
+gap (0.71/0.67/0.68 — no decay down a line), and the cousin
+LCA-ordering is direction-only and split-unstable.
+
+Un-predicted structural headline, recorded for the derivation: the
+tree-DISTANCE table is a clean monotone variogram (near-geometric,
+corr(d) ~ 0.7 x ~0.65^(d-1), zero by d ~ 7) — the measured covariance
+object in its simplest sufficient form. Next rung (own registration):
+derive contrast evidence noise + allocation currency from this
+variogram (nested-effects/distance-kernel form), then the ladder.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
