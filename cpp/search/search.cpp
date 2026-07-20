@@ -607,14 +607,13 @@ void Search::runWholeSearch(
 //If we're being asked to search from a position where the game is over, this is fine. Just keep going, the boardhistory
 //should reasonably tolerate just continuing. We do NOT want to clear history because we could inadvertently make a move
 //that an external ruleset COULD think violated superko.
-void Search::beginSearch(bool pondering) {
-  if(rootBoard.x_size > nnXLen || rootBoard.y_size > nnYLen)
-    throw StringError("Search got from NNEval nnXLen = " + Global::intToString(nnXLen) +
-                      " nnYLen = " + Global::intToString(nnYLen) + " but was asked to search board with larger x or y size");
-
-  //M2 contract: the Bayesian side state is single-threaded, tree-mode only
-  //(sibling-set exclusivity breaks under graph search; virtual loss vs
-  //deterministic descent is M5). See docs/bayes-port-plan.md.
+//M2 contract: the Bayesian side state is single-threaded, tree-mode only
+//(sibling-set exclusivity breaks under graph search; virtual loss vs
+//deterministic descent is M5). See docs/bayes-port-plan.md.
+//Public so AsyncBot can validate on the CALLER thread before handing the
+//search to its internal thread — a throw from the async thread leaves the
+//caller hung in waitForSearchToEnd (the 2c-e laptop bug report).
+void Search::validateBayesParamContract() const {
   if(searchParams.useBayesSearch) {
     if(searchParams.numThreads > 1)
       throw StringError("useBayesSearch requires numSearchThreads = 1 (M5 will lift this)");
@@ -629,6 +628,14 @@ void Search::beginSearch(bool pondering) {
     throw StringError("useBayesContrastSelection requires useBayesSearch (docs/bayes-m8-integration.md 2d)");
   if(searchParams.useBayesContrastSelection && searchParams.useBayesSelection)
     throw StringError("useBayesContrastSelection and useBayesSelection are mutually exclusive");
+}
+
+void Search::beginSearch(bool pondering) {
+  if(rootBoard.x_size > nnXLen || rootBoard.y_size > nnYLen)
+    throw StringError("Search got from NNEval nnXLen = " + Global::intToString(nnXLen) +
+                      " nnYLen = " + Global::intToString(nnYLen) + " but was asked to search board with larger x or y size");
+
+  validateBayesParamContract();
 
   rootBoard.checkConsistency();
 

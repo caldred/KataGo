@@ -73,30 +73,36 @@ def main():
     ap.add_argument("--katago", required=True)
     ap.add_argument("--model", required=True)
     ap.add_argument("--data", required=True)
+    ap.add_argument("--visits", type=int, default=0,
+                    help="override maxVisits (2d-l: 1024)")
+    ap.add_argument("--outdir", default="m8-2cb")
+    ap.add_argument("--stride", type=int, default=1)
     args = ap.parse_args()
     data = Path(args.data)
-    outdir = data / "m8-2cb"
+    outdir = data / args.outdir
     outdir.mkdir(exist_ok=True)
-    positions = fresh_positions(data)
+    positions = fresh_positions(data)[::args.stride]
     print(f"positions: {len(positions)}", file=sys.stderr)
-    out = open(data / "m8-2cb-moves.jsonl", "a", buffering=1)
+    out = open(data / f"{args.outdir}-moves.jsonl", "a", buffering=1)
     try:
         for i, pos in enumerate(positions):
             pla = "B" if len(pos["moves"]) % 2 == 0 else "W"
             dump = outdir / f"{pos['game_hash']}_{pos['turn']}.jsonl"
             if dump.exists():
-                dump.unlink()
+                continue  # resumable at fixed engine/config
             env = dict(os.environ)
             env["KATAGO_BAYES_AUDIT"] = str(dump)
             cmds = ["boardsize 9", "komi 7"]
             cmds += [f"play {c} {idx_to_gtp(x)}" for c, x in pos["moves"]]
             cmds += [f"genmove {pla}", "quit"]
+            cmd = [args.katago, "gtp", "-config",
+                   str(CFG_DIR / "contrast_m8_gtp.cfg"),
+                   "-model", args.model]
+            if args.visits > 0:
+                cmd += ["-override-config", f"maxVisits={args.visits}"]
             r = subprocess.run(
-                [args.katago, "gtp", "-config",
-                 str(CFG_DIR / "contrast_m8_gtp.cfg"),
-                 "-model", args.model],
-                input="\n".join(cmds) + "\n", capture_output=True,
-                text=True, env=env, timeout=300)
+                cmd, input="\n".join(cmds) + "\n", capture_output=True,
+                text=True, env=env, timeout=1200)
             move = None
             for line in r.stdout.splitlines():
                 line = line.strip()

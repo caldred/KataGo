@@ -272,6 +272,12 @@ struct Search {
   //Without performing a whole search, recompute the root nn output for any root-level parameters.
   void maybeRecomputeRootNNOutput();
 
+  //Validate the M2/M8 Bayes parameter contract; throws StringError on
+  //violation. Called by beginSearch, and by AsyncBot on the caller thread
+  //before spawning the async search (a throw on the async thread would
+  //hang the caller in waitForSearchToEnd).
+  void validateBayesParamContract() const;
+
   //Expert manual playout-by-playout interface
   void beginSearch(bool pondering);
   bool runSinglePlayout(SearchThread& thread, double upperBoundVisitsLeft);

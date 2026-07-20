@@ -105,6 +105,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
     ap.add_argument("--emit-missing", default=None)
+    ap.add_argument("--dumps", default="m8-2cb",
+                    help="dump subdir (2d-l: m8-2cb-B1024)")
     args = ap.parse_args()
     data = Path(args.data)
 
@@ -134,7 +136,7 @@ def main():
 
     rows = []
     missing = set()
-    for f in sorted((data / "m8-2cb").glob("*.jsonl")):
+    for f in sorted((data / args.dumps).glob("*.jsonl")):
         gh = f.stem.rsplit("_", 1)[0]
         turn = int(f.stem.rsplit("_", 1)[1])
         if (gh, turn) not in puct:

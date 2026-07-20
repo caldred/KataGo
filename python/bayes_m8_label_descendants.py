@@ -35,6 +35,8 @@ def load_tree(f):
     root_nid = None
     for line in f.open():
         rec = json.loads(line)
+        if rec.get("leafReveal"):
+            continue  # 2d-k tip instrument records, not node states
         nodes[rec["nid"]] = rec
         if rec["isRoot"]:
             root_nid = rec["nid"]

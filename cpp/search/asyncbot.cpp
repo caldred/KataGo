@@ -173,6 +173,9 @@ void AsyncBot::genMoveAsync(Player movePla, int searchId, const TimeControls& tc
 }
 
 void AsyncBot::genMoveAsync(Player movePla, int searchId, const TimeControls& tc, double sf, const std::function<void(Loc,int,Search*)>& onMove, const std::function<void()>& onSearchBegun) {
+  //Validate on the caller thread: a throw from the async search thread
+  //would leave the caller hung in waitForSearchToEnd.
+  search->validateBayesParamContract();
   std::unique_lock<std::mutex> lock(controlMutex);
   stopAndWaitAlreadyLocked(lock);
   assert(!isRunning);
@@ -223,6 +226,7 @@ void AsyncBot::ponder() {
 }
 
 void AsyncBot::ponder(double sf) {
+  search->validateBayesParamContract();
   std::unique_lock<std::mutex> lock(controlMutex);
   if(isRunning)
     return;
@@ -250,6 +254,7 @@ void AsyncBot::analyzeAsync(
   double firstCallbackAfter,
   const std::function<void(const Search* search)>& callback
 ) {
+  search->validateBayesParamContract();
   std::unique_lock<std::mutex> lock(controlMutex);
   stopAndWaitAlreadyLocked(lock);
   assert(!isRunning);
@@ -298,6 +303,7 @@ void AsyncBot::genMoveAsyncAnalyze(
   const std::function<void(const Search* search)>& callback,
   const std::function<void()>& onSearchBegun
 ) {
+  search->validateBayesParamContract();
   std::unique_lock<std::mutex> lock(controlMutex);
   stopAndWaitAlreadyLocked(lock);
   assert(!isRunning);

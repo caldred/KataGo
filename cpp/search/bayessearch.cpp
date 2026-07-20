@@ -364,6 +364,26 @@ void Search::bayesRecomputeNodeStats(SearchNode& node, bool isRoot) {
       cbs.accN = 1;
       cbs.accS = cbs.sigma0;
       cbs.accQ = cbs.sigma0 * cbs.sigma0;
+      //2d-k instrument: a new leaf never recomputes on its creation
+      //playout (bayesState was NULL when the backup reached it), so
+      //AUDIT_ALL otherwise never sees the tip edge of the playout.
+      //Emit a minimal leafReveal record so per-playout tip-edge head
+      //ratios are measurable (docs/bayes-m8-integration.md 2d-k).
+      {
+        static const char* auditPathLR = std::getenv("KATAGO_BAYES_AUDIT");
+        static const char* auditAllLR = std::getenv("KATAGO_BAYES_AUDIT_ALL");
+        if(auditPathLR != NULL && auditAllLR != NULL) {
+          std::ostringstream o;
+          o.precision(17);
+          o << "{\"nid\":" << (uintptr_t)childMutable
+            << ",\"isRoot\":0,\"leafReveal\":1"
+            << ",\"nodeAccN\":1,\"nodeSigma0\":" << cbs.sigma0
+            << ",\"parentNid\":" << (uintptr_t)&node
+            << ",\"parentSigma0\":" << bs.sigma0 << "}";
+          std::ofstream f(auditPathLR, std::ios::app);
+          f << o.str() << "\n";
+        }
+      }
       //M3: initialize the child's own KG state from its fresh n=0 set — the
       //engine analogue of bmcts _reveal -> _expand_seq(child) (algorithms.py
       //_expand_seq/_refresh_set/_recompute_seq), which give a just-revealed

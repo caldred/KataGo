@@ -1665,6 +1665,36 @@ remaining questions live. A protocol-v3 entropy increase is
 deferred to a future campaign boundary (e.g. the paper's final
 confirmation runs), where it would be registered fresh.
 
+## Dedup re-audit addenda (2026-07-20, append-only)
+
+M3-era gates (local dirs, now re-audited): match64 raw -232 ->
+dedup -230 +/- 16 (only 3/300 duplicates — the M3 stack diverged so
+much that games rarely replayed); match64-rerun raw -366 -> dedup
+-264 +/- 26 (141/300 dups). The M3 catastrophe was real; every M3
+gate conclusion stands with magnitudes adjusted.
+
+DIVERGENCE-RATE LAW, formal re-fit on deduped B=64 points
+(rate %/move, deduped Elo): (36, -71) 2c ungated; (5.9, -10) 2cb
+gated; (29, -70) 2d-c voi; (27, -54) 2d-i voi; (3.1, -19) 2d-i
+chooser (noisy, +/-17). Through-origin least squares:
+**-2.1 Elo per %/move divergence** (per-point ratios 1.97 / 1.69 /
+2.41 / 2.00 / 6.1-noise). This SUPERSEDES the "-1 Elo/% deduped"
+eyeball in the re-audit section above — the corrected data fits the
+original -2 constant TIGHTER than the raw data did (raw 2c was the
+3.75 outlier). The law's standing form: at neutral divergence
+quality, expect ~ -2 Elo per %/move of divergence from PUCT at
+B = 64; positive-quality divergence is the only escape.
+
+2c-e LAPTOP CELLS — RE-AUDIT PENDING, CONCLUSIONS FLAGGED: the
+policy-baseline dirs (match-2ce-B*) live on the laptop only. The
+2c-e machineryMargin conclusions (+88 at B=16, +127 at B=64) were
+computed from RAW Elo on both sides, and the CBTS side changed sign
+under dedup (-4 vs +52 at B=16) — the margins are SUSPECT until the
+laptop SGFs are dedup-rescored. Laptop command (dedup scorer is in
+the repo): python python/bayes_m8_dedup_score.py match-2ce-B8
+match-2ce-B16 match-2ce-B32 match-2ce-B64. Do not cite 2c-e margins
+until then.
+
 ## 2d-m registration (the B = 1024 match; appended before launch,
 ## runs after 2d-l and the open engineering items settle)
 
