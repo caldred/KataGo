@@ -905,6 +905,44 @@ deviation rate at high verification and the B=32 dip shrinks
 materially; P-2dg2 B=16 stays positive; P-2dg3 B=64 within the
 parity band or better.
 
+## 2d-h registration (the fade rate; Cal's budget-generality critique,
+## 2026-07-19; appended before any run)
+
+Critique accepted and recorded: the 2d-g constants compress a
+budget-free object (the net's error-inheritance law) into a
+shallow-horizon snapshot; flat-at-0.7-over-3-plies cannot distinguish
+permanent inheritance from ~2%/move fade, and those diverge exactly
+where budgets grow. The general model (three budget-free components):
+  corr(same line, gap g)   = G + L * theta^g
+  corr(across a fork)      = G (approximately, per 2d-f cousins)
+with G = board-wide component, L = lineage component, theta = per-move
+fade. The engine then derives any subtree's noise AT RUNTIME from the
+tree it actually built (per-node accumulators, next rung) — no
+budget-indexed constants anywhere. 2d-g's fixed floor is this model's
+shallow-tree limit and stays valid where validated (16-64 visits).
+
+Measurement (this rung): 60 lines rolled out by repeated 500-visit
+searches (top move each step, 30 plies or stop at pass/decided),
+from every-7th m5 first-turn position (deterministic). Per step: raw
+1-visit eval + the search's own 500-visit value as label. Sidelines:
+at depths 5 and 15, the search's #2 move gets one eval+label node
+(long-range cross-branch entries). Errors e_d = raw_d - label_d;
+corr by gap 1..30 pooled, cluster bootstrap by line, even/odd split;
+fit (G, L, theta) by least squares on the gap curve.
+
+Registered predictions:
+- P-2dh1 (cross-validation): gaps 1-3 reproduce 2d-f's ~0.7 plateau.
+- P-2dh2 (the decision): corr declines materially by gap 20-30 —
+  operationalized: corr(gap 20 bucket) < 0.45. If instead corr(30)
+  >= 0.6, inheritance is stubborn and the constant floor IS the
+  budget-general law (either outcome settles the design).
+- P-2dh3: sideline (cross-fork) entries sit near the 2d-f cousin
+  level ~0.3 and are roughly gap-independent (they estimate G).
+
+Scripts: python/bayes_m8_theta_lines.py (collection),
+bmcts scripts/m8_theta_fit.py (fit), written after this commit.
+Output bayes-data/m8-theta-lines.jsonl, append-only.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
