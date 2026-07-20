@@ -1173,3 +1173,65 @@ pipeline resumes, only new positions processed) and re-run the fit.
 Target unchanged: P-fit2's CI criterion. No new predictions; P-fit3
 re-scored on the larger n decides the distance-only vs LCA-term
 question at the NEXT registration if it persists.
+
+## 2d-h addendum registration (k-space shipping criterion; appended
+## before the CI computation)
+
+The n=180 rerun: P-fit1 CONFIRMED (third consecutive), P-fit2 REFUTED
+— but the registered phi-window [0.6, 0.85] presumed pure-AR and is
+wrong for the winning floor family ((1-c)phi + c ~ 0.68 matches the
+measured parent-child; a REGISTRATION ERROR, owned). P-fit3 REFUTED
+again with the cause now quantified: same-net label errors correlate
+at close tree relationships (shared deep reading) — T-same AD entries
+are numerator-inflated while T-same cousins, rescaled by the true
+diagonal (0.231 x 0.0215/0.0134 = 0.37), agree with T-ref (0.41). The
+T-same shape check was mis-designed; T-ref-only fitting is correct.
+
+The consumers need k(d) VALUES on d <= 8, not the (phi, c) split —
+and those are identified where the split is not. Replacement shipping
+criterion (P-fit2b), registered before computing the CIs:
+
+- cluster-bootstrap CI half-width of k(1) (the implied parent-child
+  correlation) <= 0.10, and the derived constants (rho_bar_within,
+  rho_bar_cross, contrast floor, n_eff(inf), sigma) reported with
+  bootstrap CIs. Pass -> constants ship in k-space (with the (phi,c)
+  ambiguity documented for extrapolation beyond measured d);
+  fail -> more positions (B32 archive next), no constants.
+
+## 2d-h final outcome (2026-07-20, append-only) — P-fit2b CONFIRMED:
+## the kernel constants SHIP (k-space, n=180)
+
+Bootstrap CIs on the parametrization-invariant quantities
+(bmcts results/kernel-fit-2dh-kspace.json; 4480 pair products,
+180 games):
+
+    k(1) parent-child corr   0.66  [0.60, 0.76]   (half-width 0.079)
+    rho_bar_within           0.58  [0.51, 0.67]
+    rho_bar_cross(root)      0.43  [0.31, 0.51]
+    contrast floor/arm-pair  0.0042 [0.0022, 0.0069]  (winrate^2)
+    n_eff(infinity)          1.7   [1.5, 2.0]
+    sigma (b18 first eval)   0.116 [0.107, 0.123]  (winrate)
+    floor c = k(infinity)    [0.25, 0.50]  (extrapolation ambiguity
+                             documented; interior k(d<=8) identified)
+
+What these mean, in the theory's terms (nested-field doc §5):
+- The resolution limit now has its constant: within-subtree evidence
+  multiplies information by AT MOST ~1.7x, ever. The flat noise curve
+  is quantitatively closed.
+- The contrast principle is priced: absolute per-arm error floor
+  rho_w*sigma^2 ~ 0.0078; naive independent-arms contrast would be
+  ~0.0157; the measured contrast floor is 0.0042 — contrasts are
+  ~3.7x less noisy than independence assumes. This is the number the
+  divergence-rate law and every evidence-quality gate should be
+  re-derived from.
+- The belief-state v2 engine port gets its inheritance scale:
+  k(1) = 0.66 (per-level shared-component correlation), with the
+  floor share ambiguity [0.25, 0.50] carried explicitly. The testbed
+  probes' phi = 0.7 cell was the right stand-in (k(1) ~ 0.66).
+
+Sequence status: 2d-e steps (i) measure and (ii) fit/derive are DONE
+(local variant; desktop cross-check optional). Step (iii) — the
+ladder with kernel-derived gates — is next, engine-side, own
+registration. The M1 rho = 0.26 vs k-table discrepancy is recorded as
+estimand difference (fresh root sets vs searched-tree relationships),
+resolved enough for constants to ship.
