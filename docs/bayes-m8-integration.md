@@ -1514,3 +1514,61 @@ boundary arms on BOTH sides get measured because reducing decision
 risk requires it. The marginal-value form (how a new eval enters
 accN/accS/accQ in expectation, resolution probability from the tip
 stErr) is the derivation deliverable of that registration.
+
+## 2d-k registration (kernel-priced VOI at the root: the D currency
+## returns with honest pricing; 2026-07-20, appended before any
+## measurement or code)
+
+Mechanism claim (from 2d-i-b): 2d-c's contested-only score locks in
+because the reference arm's near-delta contrast field dominates the
+overlap density — the argmax-contested IS the reference, visits
+pour into it, it stays reference. Kernel-priced marginal value
+breaks the lock exactly there: a dwelling reference subtree has
+DeltaVar ~ 0, so its score dies and the budget crosses the decision
+boundary. bmcts provenance: score = contested x one-reveal-drop is
+the v5-validated voi-KG shape; only the variance pricing was ever
+wrong (1/n), and the kernel replaces it.
+
+Step 1, MEASUREMENT (before any formula is pinned): the realized
+marginal variance sequence. Instrument: KATAGO_BAYES_AUDIT_ALL
+trajectories already record (accN, accS, accQ) per node per
+recompute. Collect ~40 fresh audited contrastvoi searches at B=64
+(every-8th m5 position); for each root arm and each successive
+subtree eval n -> n+1, record the realized DeltaVar = Q/n^2 drop
+and the tip-edge head ratio at the eval that produced it. Fit the
+one-eval expectation E[DeltaVar | accumulators, tip stErr] in the
+simplest form that tracks the empirical sequence: candidate M1
+(clone entry: S -> S(n+1)/n, Q -> Q((n+1)/n)^2, DeltaVar = 0 —
+pure dwelling null), candidate M2 (fresh entry at mean fade:
+S -> S + phi_bar s_tip, Q -> Q + kernel cross terms, phi_bar =
+(S - s_root-of-arm)/S proxy), candidate M3 (mixture: resolution
+probability from tip stErr ratio interpolating M1/M2). Pin on
+median tracking of the realized sequences (labels/dumps only, no
+Elo). Registered prediction P-2dk1: realized DeltaVar per eval is
+strongly bimodal — near-zero on dwelling arms, material on arms
+whose tip head drops — i.e. the kernel's resolution split is
+visible in the allocator's own currency.
+
+Step 2, consumer form (implemented only if Step 1 pins a model):
+root score_j = contested_j x E[DeltaVar_j] with contested from the
+existing overlap density INCLUDING the reference arm scored by ITS
+E[DeltaVar] x its density mass; interior nodes keep w-routing
+(2d-c form) x E[DeltaVar] at the child. Deviation gate and chooser
+untouched (they ship as 2d-i). Mirrors + audit fields extended;
+12/12 exact required; goldens + suite; smoke.
+
+Registered match predictions (protocol v2, dedup primary,
+B = 16/32/64 vs stock PUCT, n = 300 raw -> >= ~120 distinct, plus
+a voi-vs-voi... no — same two-arm ladder as 2d-i):
+- P-2dk2: divergent-pick visit hoarding drops (chosen_visits share
+  at divergences median well below 63/64) and boundary breadth
+  rises — the lock-in signature disappears.
+- P-2dk3: own-allocation deduped Elo improves materially at B = 64
+  (at least halving the -54..-70 deficit toward the band edge).
+- P-2dk4: chooser-arm (PUCT-allocation) cells stay in band —
+  no regression channel exists (allocator change only).
+Disposition: if P-2dk1 fails (no bimodality; realized DeltaVar
+tracks 1/n after all under the kernel), the kernel's allocation
+story is wrong even though its chooser pricing is right — record
+it, keep 2d-i ship state, and the voi arm stays closed at parity-
+minus until a new mechanism is found.
