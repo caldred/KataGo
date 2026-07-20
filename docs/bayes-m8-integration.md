@@ -1741,6 +1741,53 @@ B = 16/32/64, n = 300. Registered predictions:
 - P-2dkb3: chooser-arm cells unaffected (no shared code path).
 Elo tunes nothing; the pin is from trajectory data only.
 
+## 2d-k-b outcome (2026-07-20, append-only) — H WINS THE SHOOTOUT,
+## FAILS THE LADDER; REVERTED; the currency question stays open
+
+Shootout (2,434 instrumented events, 40 trajectories): H capture
+0.868 / Spearman +0.27; T REFUTED — realized gains are FLAT across
+tip-ratio buckets (capture 0.192): the tip-edge head ratio carries
+no per-event signal for where variance actually drops. H pinned per
+the rule and was implemented (root score contested x gv/(n+1)).
+Smoke confirmed the registered mechanism: hoarding gone (chosen-arm
+3-15/64 visits vs 63/64; breadth 10-55 vs 1-5) — P-2dkb1 direction
+confirmed. Match ladder (dedup): **-253 +/- 32 / -184 +/- 24 /
+-233 +/- 23 at B = 16/32/64 — catastrophically WORSE than lock-in's
+-66/-86/-54. P-2dkb2 FAILED; H REVERTED same-session** (engine back
+to 2d-c contested-only; chooser arm untouched throughout).
+
+Attribution, honest and structural: gv/(n+1) zeroes the REFERENCE
+arm's score by construction (its contrast is identically 0), so the
+presumptive-best move never gets verified while the budget sprays
+across the boundary — the M3-era broad-shallow thin-evidence
+pathology returns wearing a decision-theoretic coat. The 2d-i-b
+lock-in and this failure are the two poles of the same open
+question: the root currency must fund BOTH boundary exploration AND
+reference verification, and neither contested-only (all-reference)
+nor contested x gv/(n+1) (no-reference) prices that trade. What a
+successor must have: a term for the VALUE OF VERIFYING THE
+REFERENCE (reducing Var(Lr) sharpens every contrast simultaneously
+— it enters all gv_j through nv's varR term), priced by the same
+kernel quantities. Recorded for the next registration; nothing
+ships this rung. Ship state: 2d-i chooser stack + 2d-c voi
+allocation (still below band; the frontier is unchanged but now
+mapped from both sides).
+
+## 2d-l outcome (2026-07-20, append-only) — z* = 0.50 HOLDS AT
+## B = 1024
+
+108 positions, fresh dumps, 24 gap labels added. Ladder at
+z* = 0.50: deviation rate 6.5%/move (P-2dl1 bar was within 2x of
+B=64's 3.1% = 6.2% — MARGINAL MISS at 2.1x, scored as such);
+deviation mean +0.0007, CI [-0.0021, +0.0046] — P-2dl2 PASS
+(quality-neutral, not CI-negative; the gate does not misfire at
+high budget). Under the deduped divergence law (-2.1 Elo/%), 6.5%
+neutral divergence predicts ~ -13 Elo at B = 1024 — inside the
+parity band; the 2d-m predictions stand unchanged. Secondary
+observation, not over-read (labels are 500-visit, shallower than
+the B=1024 searches): the overall pick-quality column is +0.020 in
+the bot's favor across all positions.
+
 ## 2d-m registration (the B = 1024 match; appended before launch,
 ## runs after 2d-l and the open engineering items settle)
 
