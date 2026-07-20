@@ -1131,3 +1131,173 @@ no consumer touches. The sequence stands as registered in 2d-e:
 currency from the measured covariance (own registration — fitting a
 generative field, e.g. an AR-on-tree kernel, happens there and only
 against this table); (iii) the ladder again.
+
+## 2d-i registration (the resolution kernel: budget-general
+## correlated-noise accumulators; 2026-07-19, appended before any
+## fit script or engine change)
+
+This is rung (ii) of the 2d-e sequence and the accumulator design
+pre-committed in the 2d-h outcome. It replaces the 2d-g class
+constants (w_in, w_cross) — a validated shallow-horizon snapshot —
+with a generative error field whose only inputs are per-node
+observables, so that every noise quantity the engine consumes is
+derived at runtime from the tree it actually built. No constant is
+indexed by budget, depth, or node class.
+
+### The field (single mechanism)
+
+Plain-language statement first: a network eval is wrong mostly
+because of unresolved questions in the position (an unsettled fight,
+an unclear group). Those questions are inherited move by move — a
+child position mostly contains its parent's open questions — until a
+move RESOLVES one, at which point the inherited part of the error
+collapses with it. The stErr head is the net's own estimate of how
+much unresolved uncertainty a position carries, so the ratio of
+child-head to parent-head measures how much question-mass an edge
+carried through. That is the whole model.
+
+Formally: first-eval error at node v is
+  e_v = s_v * ( sqrt(A) * B_v + sqrt(1-A) * eps_v )
+with s_v = the M1-corrected head sigma (bayesSigmaFromStErr), eps_v
+private white noise, and B_v a unit-variance lineage-bias field with
+product-form correlation along tree paths:
+  corr(B_u, B_w) = prod over edges e on the u..w path of phi_e
+  phi_e (parent p -> child c) = theta0 * min(1, s_c / s_p)^gamma
+Three constants total — A (shared fraction of eval error), theta0
+(retention on a dwelling edge, ratio ~ 1), gamma (how strongly a head
+drop sheds inherited bias) — pinned on LABEL DATA ONLY (below).
+Implied pairwise covariance: Cov(e_u, e_w) = A * s_u * s_w *
+prod(phi_e). Fork shedding is not a separate mechanism: a path that
+turns at a fork simply crosses more edges, and edges into
+less-contested siblings are resolution edges (head drops), which is
+where the shedding comes from — testable, not assumed.
+
+### Reconciliation ledger (what one constant set must explain)
+
+The review standard for this rung: the SAME (A, theta0, gamma) must
+be consistent with every correlation this campaign has measured,
+with the population differences carried entirely by the observable
+s-ratios, never by per-population constants.
+  C1 dwelling plateau: search-tree pairs (2d-f) — parent-child
+     0.712, ad-gap2 0.668, ad-gap3+ 0.678, sibling 0.607. Dwelling
+     edges have ratio ~ 1, so predictions ~ A*theta0^d, near-flat
+     for theta0 near 1.
+  C2 depth split of siblings: root-fresh siblings 0.26-0.29 (M1 rho;
+     m8-2cb fresh-pair variance 1.42*vbar) vs deep siblings 0.607.
+     The model's account: m5 roots are contested (high parent head);
+     their children partially resolve (ratio < 1), so root fork
+     edges carry low phi; deep dwelling forks carry phi ~ theta0.
+     This is the make-or-break check — class constants cannot
+     explain a depth-dependent sibling correlation; the observable
+     either does or the model dies here.
+  C3 strong-play fade: 2d-h lines, corr(g) ~ 0.605 * 0.875^g. On
+     resolving lines the head steps down repeatedly, so per-edge phi
+     ~ 0.875 and the g -> 0 intercept estimates A ~ 0.6.
+  C4 cousins: 0.288 (root) / 0.299 (near) — longer paths, more
+     resolution edges.
+  C5 the 2d-b flat noise curve: within a dwelling subtree phi ~
+     theta0 ~ 1 makes the pair mass Q grow like n^2, so the
+     subtree-mean error variance never gains 1/n — the measured
+     err^2(n) ~ n^-0.15 plateau, now derived rather than pinned.
+  C6 divergence-rate law compatibility: nothing in the kernel
+     changes prior means; only claimed precisions move. Deviations
+     must still clear the re-pinned z*.
+
+### Fit protocol (labels only; bmcts scripts/m8_kernel_fit.py)
+
+Data, all already collected — no new labeling:
+  (a) 2d-f clean pairs: m8-desc-labels.jsonl, pairs whose connecting
+      path is fully covered by labeled nodes (principal-chain
+      sampling makes most pairs path-complete; report the skip
+      count). Root stNode per tree from the m8-audit root records.
+  (b) 2d-h line pairs: m8-theta-lines.jsonl, all step pairs, plus
+      sideline cross-fork pairs (fork node on the chain).
+Errors standardized per node by the corrected head sigma (drop
+s < 1e-3); observed products z_u * z_w vs predicted A * prod(phi_e);
+weighted least squares on the pooled pair set (weight 1/pair,
+cluster bootstrap by game resp. line for CIs); grids A in [0.3,
+0.9] step 0.02, theta0 in [0.60, 1.00] step 0.01, gamma in [0, 3]
+step 0.1. Populations are pooled — one constant set, that is the
+point.
+Baselines the kernel must beat on joint SSE: (i) gamma = 0 (pure
+constant-retention AR — no observable); (ii) the 2d-g class model
+scored on the same pairs (w_in same-root-arm / w_cross cross-arm on
+tree pairs, w_in flat on line pairs). Pin rule: lowest joint SSE;
+ties (within 2%) break toward fewer effective constants.
+
+Registered fit predictions:
+- P-2di1: the kernel beats baseline (i) by >= 30% joint SSE and
+  baseline (ii) cross-population by more (2d-g has no gap axis).
+- P-2di2: gamma > 0 with bootstrap CI excluding 0 — resolution
+  (the head drop) is the fade carrier. This is Cal's volatility
+  mechanism in its surviving form: the head's predicted volatility,
+  not realized sample spread (2d-d refuted the latter).
+- P-2di3: the fitted kernel reproduces the C2 depth split within
+  bootstrap CIs using measured s-ratios (no class constants).
+
+### Engine forms (registered now, implemented only if the fit pins)
+
+Per-node accumulators in BayesNodeState, updated in
+bayesRecomputeNodeStats from the set state (children recompute
+before parents on the backup path, so child accumulators are always
+current; off-path subtrees are unchanged hence still valid). Sigma-
+weighted so heteroscedasticity is native and vbar disappears:
+  n_v = 1 + sum_c n_c                (evals in subtree)
+  S_v = s_v + sum_c phi_c * S_c      (fade-weighted sigma mass)
+  Q_v = s_v^2 + sum_c Q_c + 2*A*s_v*sum_c phi_c*S_c
+        + A * [ (sum_c phi_c*S_c)^2 - sum_c (phi_c*S_c)^2 ]
+with phi_c = theta0 * min(1, s_c/s_v)^gamma on the edge v -> c, and
+terminal-evaled children contributing n only (s = 0, exact values
+carry no NN error). Derivation of Q (the ordered-pair decomposition;
+each within-child pair keeps its own A from Q_c, every pair that
+first meets at v gets A once):
+  sum over ordered pairs (u,w) in subtree(v) of Cov(e_u,e_w)/A-units
+  = own-own (s_v^2) + own-descendant both orders (2 s_v sum phi S)
+  + within one child (sum Q_c) + across children (cross products).
+Consumers (chooser AND contrast-voi selection, same forms):
+  Var(subtree-mean error of arm a)  = Q_a / n_a^2
+  Cov(arm a mean, arm r mean)       = A * phi_a * phi_r * S_a * S_r
+                                       / (n_a * n_r)
+  contrast evidence noise: nv = Q_a/n_a^2 + Q_r/n_r^2 - 2*Cov
+  eval-only arm: n = 1, S = s_a, Q = s_a^2.
+  anchor fallback (ref unvisited): reference level = anchMu as now;
+  the anchor is the node's OWN eval, one lineage edge above the arm:
+  nv = Q_a/n_a^2 + s_node^2 - 2*A*phi_a*S_a*s_node/n_a.
+  Numerical floor 1e-9 only — NO modeling floor: fully resolved
+  deep lines legitimately earn near-zero noise. That is the M7
+  under-crediting fix arriving through the front door, and it is
+  what makes this rung an ALLOCATION theory: dwelling subtrees keep
+  Q ~ n^2 (more evals there buy nothing, VOI collapses), resolving
+  subtrees shed Q (their evidence sharpens, deviations become
+  affordable), so contested-overlap allocation and the chooser both
+  inherit resolution-awareness from the same accumulators.
+  Prior contrast pv = 2*sigma_r^2 and the dMean prior: unchanged.
+Audit dump gains per-arm accS, accQ, accN, phi fields (additive;
+consumers are our own mirrors).
+
+### Ladder (fixed by precedent, in order)
+
+1. Build; 596 goldens byte-identical; full runtests from cpp/.
+2. Chooser mirror updated (bayes_m8_verify_contrast.py +
+   bayes_m8_2cb_analyze.py contrast_posteriors): 12/12 exact.
+3. Tree-shape smoke: bayes_m7_replay.py --bots contrastvoi,puct
+   --second-turn --limit 6 (breadth/depth sane, no hangs).
+4. z* re-pin via the 2c-b ladder on fresh dumps under the kernel
+   noise (labels only; same pin rule: smallest z with deviation mean
+   >= +0.005 CI-excl-0, else parity-targeted argmax).
+5. Match ladder vs stock PUCT, bayes_m8_match*.cfg protocol,
+   B = 16/32/64, n = 300 each; N = 1000 one-look confirmation for
+   any point outside [-40, +40]. Elo tunes nothing, ever.
+
+Registered match predictions:
+- P-2di4: B=16 stays positive (the +52 regime survives the noise
+  swap; shallow trees sit in the kernel's dwelling limit ~ 2d-g).
+- P-2di5: the B=32 dip (-85) closes to within [-40, +40] — the dip
+  is the partial-verification window, and pricing 2-3-visit
+  dwelling subtrees at Q ~ n^2 (no false 1/n gain) is exactly what
+  the kernel changes there.
+- P-2di6: B=64 within the parity band or better.
+Disposition: if the fit fails P-2di1/2, the 2d-g constants stand and
+this doc records the kernel as refuted — the class model would then
+BE the law and budget-generality fails empirically, which is
+reportable. If matches fail P-2di4, ship state remains 2d-g.
