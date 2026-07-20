@@ -56,8 +56,14 @@ def sgf_to_gtp(mv: str) -> str:
 def stage_positions(n_games: int):
     out = DATA / "positions.jsonl"
     if out.exists():
-        print(f"[positions] exists ({sum(1 for _ in out.open())})")
-        return
+        n_have = sum(1 for _ in out.open())
+        if n_have >= n_games:
+            print(f"[positions] exists ({n_have})")
+            return
+        # top-up: sorted-hash order + per-game seeding make the first
+        # n_have rows identical; regenerate the superset
+        print(f"[positions] extending {n_have} -> {n_games}")
+        out.unlink()
     games = []
     for path in sorted(SRC.glob("*.sgfs")):
         for line in path.open():
