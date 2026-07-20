@@ -322,6 +322,9 @@ void Search::bayesRecomputeNodeStats(SearchNode& node, bool isRoot) {
     bs->bExp = 1.0;
     bs->anchorFrozen = true;
     bs->resolvable = sigma0 * sigma0;
+    bs->accN = 1;
+    bs->accS = sigma0;
+    bs->accQ = sigma0 * sigma0;
     node.bayesState = bs;
   }
   BayesNodeState& bs = *node.bayesState;
@@ -357,6 +360,10 @@ void Search::bayesRecomputeNodeStats(SearchNode& node, bool isRoot) {
       cbs.mu0 = ss.evalWinrate[j];
       cbs.sigma0 = bayesSigmaFromStErr(ss.evalStErr[j]);
       cbs.resolvable = cbs.anchVar;  //unexpanded non-leaf: fully resolvable
+      //2d-i kernel accumulators: leaf init (one eval, its own sigma).
+      cbs.accN = 1;
+      cbs.accS = cbs.sigma0;
+      cbs.accQ = cbs.sigma0 * cbs.sigma0;
       //M3: initialize the child's own KG state from its fresh n=0 set — the
       //engine analogue of bmcts _reveal -> _expand_seq(child) (algorithms.py
       //_expand_seq/_refresh_set/_recompute_seq), which give a just-revealed
@@ -379,6 +386,43 @@ void Search::bayesRecomputeNodeStats(SearchNode& node, bool isRoot) {
   ss.dBackup = 0.0;
   for(int j = 0; j < ss.k; j++)
     ss.dBackup = std::max(ss.dBackup, ss.w[j] * ss.D[j]);
+
+  //---- 2d-i resolution-kernel accumulators (docs/bayes-m8-integration.md
+  //2d-i engine forms): rebuilt from the children on every recompute.
+  //Children on the backup path recompute before this node, so their
+  //accumulators are current; off-path subtrees are unchanged. The Q
+  //recursion is the ordered-pair decomposition: within-child pairs keep
+  //their A (inside accQ_c); every pair first meeting at this node — own
+  //eval vs a descendant, or across two children — gets A once. Terminal
+  //exact values count in N only (they carry no NN error). ----
+  {
+    int64_t nAcc = 1;
+    double sumPhiS = 0.0;
+    double sumPhiS2 = 0.0;
+    double sumQ = 0.0;
+    for(int j = 0; j < ss.k; j++) {
+      if(ss.child[j] == NULL || !ss.evaled[j])
+        continue;
+      if(ss.terminalEvaled[j]) {
+        nAcc += 1;
+        continue;
+      }
+      const BayesNodeState* cbsAcc = ss.child[j]->bayesState;
+      if(cbsAcc == NULL || !cbsAcc->anchorFrozen)
+        continue;
+      double phiC = BayesKernel::phi(cbsAcc->sigma0, bs.sigma0);
+      double ps = phiC * cbsAcc->accS;
+      nAcc += cbsAcc->accN;
+      sumPhiS += ps;
+      sumPhiS2 += ps * ps;
+      sumQ += cbsAcc->accQ;
+    }
+    bs.accN = nAcc;
+    bs.accS = bs.sigma0 + sumPhiS;
+    bs.accQ = bs.sigma0 * bs.sigma0 + sumQ
+              + 2.0 * BayesKernel::A * bs.sigma0 * sumPhiS
+              + BayesKernel::A * std::max(sumPhiS * sumPhiS - sumPhiS2, 0.0);
+  }
 
   bs.vsKids = ss.vX;
   bs.betaKids = ss.kappaAlpha * bs.bExp;
@@ -433,6 +477,9 @@ void Search::bayesAuditDumpRoot(
     << ",\"dBackup\":" << ss.dBackup
     << ",\"nodeMu\":" << bs.mu << ",\"nodeB\":" << bs.b
     << ",\"nodeVPriv\":" << bs.vPriv << ",\"nodeResolvable\":" << bs.resolvable
+    << ",\"nodeSigma0\":" << bs.sigma0
+    << ",\"nodeAccN\":" << bs.accN << ",\"nodeAccS\":" << bs.accS
+    << ",\"nodeAccQ\":" << bs.accQ
     << ",\"params\":{\"rho\":" << searchParams.bayesRho
     << ",\"sigmaA\":" << searchParams.bayesSigmaA
     << ",\"sigmaB\":" << searchParams.bayesSigmaB
@@ -472,6 +519,10 @@ void Search::bayesAuditDumpRoot(
       << ",\"w\":" << ss.w[j]
       << ",\"childVisits\":" << childVisits
       << ",\"childAvg\":" << childAvg
+      << ",\"accN\":" << (frozen ? ss.child[j]->bayesState->accN : (int64_t)0)
+      << ",\"accS\":" << (frozen ? ss.child[j]->bayesState->accS : 0.0)
+      << ",\"accQ\":" << (frozen ? ss.child[j]->bayesState->accQ : 0.0)
+      << ",\"childSigma0\":" << (frozen ? ss.child[j]->bayesState->sigma0 : 0.0)
       << ",\"childNid\":" << (uintptr_t)ss.child[j] << "}";
   }
   o << "]}";
@@ -555,47 +606,56 @@ void Search::bayesSelectBestChildToDescend(
                           + searchParams.bayesSigmaDB * std::log(std::max(stNode * stNode, 1e-8)));
     std::vector<int64_t> nVis(ss.k, 0);
     std::vector<double> cAvg(ss.k, -1.0);
-    std::vector<double> cVObs(ss.k, -1.0);
-    double s2sum = 0.0;
-    int s2n = 0;
-    const double wlF = std::max(searchParams.winLossUtilityFactor, 1e-3);
     for(int j = 0; j < ss.k; j++) {
       if(ss.child[j] != NULL) {
         NodeStats cst(ss.child[j]->stats);
         nVis[j] = cst.visits;
-        if(cst.visits > 0 && cst.weightSum > 0.0) {
+        if(cst.visits > 0 && cst.weightSum > 0.0)
           cAvg[j] = 0.5 + 0.5 * cst.winLossValueAvg;
-          //M8 2d-d realized subtree value variance (winrate scale).
-          double vu = std::max(cst.utilitySqAvg - cst.utilityAvg * cst.utilityAvg, 0.0);
-          cVObs[j] = 0.25 * vu / (wlF * wlF);
-        }
-      }
-      if(ss.evaled[j]) {
-        double s = bayesSigmaFromStErr(ss.evalStErr[j]);
-        s2sum += s * s;
-        s2n++;
       }
     }
-    double vbar = s2n > 0 ? s2sum / (double)s2n
-                          : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
-    //M8 2d-g variogram-derived nested noise (same constants as the
-    //chooser; docs/bayes-m8-integration.md 2d-g registration).
-    const double BAYES_W_IN = 0.65;
-    const double BAYES_W_CROSS = 0.29;
-    (void)cVObs;  //2d-d volatility proxy refuted; fields still dumped
+    //M8 2d-i resolution kernel (same forms as the chooser;
+    //docs/bayes-m8-integration.md 2d-i engine forms).
+    const double sNode = node.bayesState->sigma0;
+    auto armAcc = [&](int j, int64_t& nA, double& sA, double& qA, double& phiA) {
+      const SearchNode* ch = ss.child[j];
+      if(ch != NULL && ch->bayesState != NULL && ch->bayesState->anchorFrozen
+         && !ss.terminalEvaled[j]) {
+        const BayesNodeState& cbs = *ch->bayesState;
+        nA = cbs.accN;
+        sA = cbs.accS;
+        qA = cbs.accQ;
+        phiA = BayesKernel::phi(cbs.sigma0, sNode);
+      }
+      else {
+        double s = bayesSigmaFromStErr(ss.evalStErr[j]);
+        nA = 1;
+        sA = s;
+        qA = s * s;
+        phiA = BayesKernel::phi(s, sNode);
+      }
+    };
     int rIdx = 0;
     for(int j = 1; j < ss.k; j++) {
       if(nVis[j] > nVis[rIdx] || (nVis[j] == nVis[rIdx] && ss.prior[j] > ss.prior[rIdx]))
         rIdx = j;
     }
-    int64_t nRef = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
-                   ? std::max(nVis[rIdx], (int64_t)1) : 1;
-    auto contrastNoise = [&](int64_t nA) -> double {
-      return vbar * (2.0 * (BAYES_W_IN - BAYES_W_CROSS)
-                     + (1.0 - BAYES_W_IN)
-                       * (1.0 / (double)nA + 1.0 / (double)nRef));
+    const bool refIsAnchor = !(nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0);
+    int64_t nR = 1;
+    double sR = 0.0, qR = 0.0, phiR = 0.0;
+    if(!refIsAnchor)
+      armAcc(rIdx, nR, sR, qR, phiR);
+    auto contrastNoise = [&](int64_t nA, double sA, double qA, double phiA) -> double {
+      double varA = qA / ((double)nA * (double)nA);
+      if(refIsAnchor)
+        return varA + sNode * sNode
+               - 2.0 * BayesKernel::A * phiA * sA * sNode / (double)nA;
+      double varR = qR / ((double)nR * (double)nR);
+      double cov = BayesKernel::A * phiA * phiR * sA * sR
+                   / ((double)nA * (double)nR);
+      return varA + varR - 2.0 * cov;
     };
-    double Lr = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
+    double Lr = !refIsAnchor
                 ? 0.5 + moverSign * (cAvg[rIdx] - 0.5)
                 : 0.5 + moverSign * (node.bayesState->anchMu - 0.5);
     double logPr = std::log(std::max(ss.prior[rIdx], 1e-12));
@@ -610,13 +670,17 @@ void Search::bayesSelectBestChildToDescend(
       bool haveEv = false;
       if(nVis[j] >= 1 && cAvg[j] >= 0.0) {
         y = 0.5 + moverSign * (cAvg[j] - 0.5) - Lr;
-        nv = contrastNoise(std::max(nVis[j], (int64_t)1));
+        int64_t nA;
+        double sA, qA, phiA;
+        armAcc(j, nA, sA, qA, phiA);
+        nv = contrastNoise(nA, sA, qA, phiA);
         nvNext = nv;  //2d-c: D dropped; kept only for dead-code symmetry
         haveEv = true;
       }
       else if(ss.evaled[j]) {
         y = 0.5 + moverSign * (ss.evalWinrate[j] - 0.5) - Lr;
-        nv = contrastNoise(1);
+        double s = bayesSigmaFromStErr(ss.evalStErr[j]);
+        nv = contrastNoise(1, s, s * s, BayesKernel::phi(s, sNode));
         nvNext = nv;
         haveEv = true;
       }

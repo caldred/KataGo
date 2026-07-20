@@ -1,6 +1,8 @@
 #ifndef SEARCH_BAYESNODESTATE_H_
 #define SEARCH_BAYESNODESTATE_H_
 
+#include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "../game/board.h"
@@ -27,6 +29,28 @@
 //
 //Threading: M2 is single-threaded by contract (useBayesSearch requires
 //numSearchThreads == 1, enforced at beginSearch). No locks here.
+
+//M8 2d-i resolution kernel (docs/bayes-m8-integration.md 2d-i
+//registration + amendment 1): eval-error correlation is a product of
+//per-edge retentions driven by the stErr-head ratio,
+//  corr(e_u, e_w) = A * prod phi_e,  phi_e = THETA0 * min(1, s_c/s_p)^GAMMA
+//Constants pinned on the search-tree pair table (label data only;
+//m8_kernel_fit.py --pin-tree). Consumed by the per-node accumulators
+//(accN/accS/accQ below) and the contrast noise in the chooser and the
+//contrast-voi selection.
+namespace BayesKernel {
+  constexpr double A = 0.923;
+  constexpr double THETA0 = 0.85;
+  constexpr double GAMMA = 1.5;
+  //Retention on the edge parent -> child, from corrected head sigmas.
+  inline double phi(double sChild, double sParent) {
+    double r = sChild / std::max(sParent, 1e-12);
+    if(r > 1.0)
+      r = 1.0;
+    return THETA0 * std::pow(r, GAMMA);
+  }
+}
+
 struct BayesNodeState {
   bool anchorFrozen = false;
   //Posterior of this node's value: error = b * X_ownset + private
@@ -54,6 +78,16 @@ struct BayesNodeState {
   //Diagnostics: own first eval (winrate) and its corrected sd
   double mu0 = 0.0;
   double sigma0 = 0.0;
+  //M8 2d-i resolution-kernel accumulators over this node's subtree
+  //(docs/bayes-m8-integration.md 2d-i engine forms). Sigma-weighted:
+  //  accN = NN evals in subtree (terminal-exact values count in N only)
+  //  accS = fade-weighted sigma mass, s_v + sum_c phi_c * accS_c
+  //  accQ = pair-covariance mass; Var(subtree-mean error) = accQ / accN^2
+  //Initialized at freeze to the leaf values (1, sigma0, sigma0^2) and
+  //rebuilt from children on every recompute of this node.
+  int64_t accN = 1;
+  double accS = 0.0;
+  double accQ = 0.0;
 };
 
 struct SearchNode;

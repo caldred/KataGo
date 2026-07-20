@@ -19,41 +19,62 @@ import numpy as np
 Z_LADDER = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
 
+# M8 2d-i resolution-kernel constants (bayesnodestate.h BayesKernel;
+# docs/bayes-m8-integration.md 2d-i amendment 1)
+KERNEL_A = 0.923
+KERNEL_THETA0 = 0.85
+KERNEL_GAMMA = 1.5
+
+
 def contrast_posteriors(rec):
     """(ref_idx, per-arm g_mean, g_var, locs) — mirror of the engine."""
     p = rec["params"]
     arms = rec["arms"]
     k = rec["k"]
     mover = 1.0 if rec["nextPla"] == "W" else -1.0
-    rho = p["rho"]
     st = rec["stNode"] if rec["stNode"] > 1e-8 else p["defaultSigma"]
     sr2 = math.exp(p["sigmaDA"] + p["sigmaDB"]
                    * math.log(max(st * st, 1e-8)))
 
-    def sig2(sterr):
+    def sig(sterr):
         s = sterr if sterr > 1e-8 else p["defaultSigma"]
         s = max(s, 1e-4)
-        return math.exp(p["sigmaA"] + p["sigmaB"] * math.log(s)) ** 2
+        return math.exp(p["sigmaA"] + p["sigmaB"] * math.log(s))
 
-    s2s = [sig2(a["evalStErr"]) for a in arms if a["evaled"]]
-    vbar = sum(s2s) / len(s2s) if s2s else p["defaultSigma"] ** 2
-    W_IN, W_CROSS = 0.65, 0.29  # 2d-g label-pinned kernel constants
+    s_node = rec["nodeSigma0"]
+
+    def phi(s_child):
+        return KERNEL_THETA0 * min(1.0, s_child / max(s_node, 1e-12)) \
+            ** KERNEL_GAMMA
+
+    def arm_acc(a):
+        if a["frozen"] and not a["terminal"]:
+            return (a["accN"], a["accS"], a["accQ"],
+                    phi(a["childSigma0"]))
+        s = sig(a["evalStErr"])
+        return 1, s, s * s, phi(s)
+
     r = 0
     for j in range(1, k):
         if (arms[j]["childVisits"], arms[j]["prior"]) > \
                 (arms[r]["childVisits"], arms[r]["prior"]):
             r = j
     ar = arms[r]
-    if ar["childVisits"] >= 1 and ar["childAvg"] >= 0:
+    ref_is_anchor = not (ar["childVisits"] >= 1 and ar["childAvg"] >= 0)
+    if not ref_is_anchor:
         Lr = 0.5 + mover * (ar["childAvg"] - 0.5)
-        n_ref = max(ar["childVisits"], 1)
+        n_r, s_r, q_r, phi_r = arm_acc(ar)
     else:
         Lr = 0.5 + mover * (rec["anchMu"] - 0.5)
-        n_ref = 1
 
-    def contrast_noise(n_a):
-        return vbar * (2.0 * (W_IN - W_CROSS)
-                       + (1.0 - W_IN) * (1.0 / n_a + 1.0 / n_ref))
+    def contrast_noise(n_a, s_a, q_a, phi_a):
+        var_a = q_a / (n_a * n_a)
+        if ref_is_anchor:
+            return var_a + s_node * s_node \
+                - 2.0 * KERNEL_A * phi_a * s_a * s_node / n_a
+        var_r = q_r / (n_r * n_r)
+        cov = KERNEL_A * phi_a * phi_r * s_a * s_r / (n_a * n_r)
+        return var_a + var_r - 2.0 * cov
 
     logpr = math.log(max(ar["prior"], 1e-12))
     gm = np.zeros(k)
@@ -65,10 +86,11 @@ def contrast_posteriors(rec):
         pv = 2.0 * sr2
         if a["childVisits"] >= 1 and a["childAvg"] >= 0:
             y = 0.5 + mover * (a["childAvg"] - 0.5) - Lr
-            nv = max(contrast_noise(max(a["childVisits"], 1)), 1e-9)
+            nv = max(contrast_noise(*arm_acc(a)), 1e-9)
         elif a["evaled"]:
             y = 0.5 + mover * (a["evalWinrate"] - 0.5) - Lr
-            nv = max(contrast_noise(1), 1e-9)
+            s = sig(a["evalStErr"])
+            nv = max(contrast_noise(1, s, s * s, phi(s)), 1e-9)
         else:
             gm[j] = pm
             gv[j] = pv

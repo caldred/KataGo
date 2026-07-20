@@ -592,7 +592,6 @@ Loc Search::getChosenMoveLoc() {
     if(bayesComputeSetState(*rootNode, ss) && ss.k > 0) {
       const int k = ss.k;
       const double mover = (rootNode->nextPla == P_WHITE) ? 1.0 : -1.0;
-      const double rho = searchParams.bayesRho;
       const NNOutput* nnOut = rootNode->getNNOutput();
       double stNode = nnOut != NULL ? 0.5 * (double)nnOut->shorttermWinlossError : 0.0;
       if(stNode <= 1e-8)
@@ -602,38 +601,39 @@ Loc Search::getChosenMoveLoc() {
 
       std::vector<int64_t> cVisits(k, 0);
       std::vector<double> cAvg(k, -1.0);
-      std::vector<double> cVObs(k, -1.0);
-      double s2sum = 0.0;
-      int s2n = 0;
-      const double wlF = std::max(searchParams.winLossUtilityFactor, 1e-3);
       for(int j = 0; j < k; j++) {
         if(ss.child[j] != NULL) {
           NodeStats cst(ss.child[j]->stats);
           cVisits[j] = cst.visits;
-          if(cst.visits > 0 && cst.weightSum > 0.0) {
+          if(cst.visits > 0 && cst.weightSum > 0.0)
             cAvg[j] = 0.5 + 0.5 * cst.winLossValueAvg;
-            //M8 2d-d: realized subtree value variance, winrate scale
-            //(utility second moment, winloss-factor scaled; prototype
-            //approximation recorded in the doc).
-            double vu = std::max(cst.utilitySqAvg - cst.utilityAvg * cst.utilityAvg, 0.0);
-            cVObs[j] = 0.25 * vu / (wlF * wlF);
-          }
-        }
-        if(ss.evaled[j]) {
-          double s = bayesSigmaFromStErr(ss.evalStErr[j]);
-          s2sum += s * s;
-          s2n++;
         }
       }
-      double vbar = s2n > 0 ? s2sum / (double)s2n
-                            : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
-      //M8 2d-g (docs/bayes-m8-integration.md): variogram-derived
-      //two-level nested noise. Label-pinned constants from the 2d-f
-      //measurement; the contrast floor 2(w_in - w_cross) vbar is
-      //permanent — claimed contrast precision is bounded by measurement.
-      const double BAYES_W_IN = 0.65;
-      const double BAYES_W_CROSS = 0.29;
-      (void)cVObs;  //2d-d volatility proxy refuted; fields still dumped
+      //M8 2d-i resolution kernel (docs/bayes-m8-integration.md 2d-i
+      //engine forms): per-arm (accN, accS, accQ) from the subtree
+      //accumulators; Var(arm-mean error) = accQ/accN^2, cross-arm
+      //Cov = A * phi_a * phi_r * accS_a * accS_r / (accN_a * accN_r).
+      //Replaces the 2d-g class constants — no modeling floor: resolved
+      //lines legitimately earn near-zero noise.
+      const double sNode = rootNode->bayesState->sigma0;
+      auto armAcc = [&](int j, int64_t& nA, double& sA, double& qA, double& phiA) {
+        const SearchNode* ch = ss.child[j];
+        if(ch != NULL && ch->bayesState != NULL && ch->bayesState->anchorFrozen
+           && !ss.terminalEvaled[j]) {
+          const BayesNodeState& cbs = *ch->bayesState;
+          nA = cbs.accN;
+          sA = cbs.accS;
+          qA = cbs.accQ;
+          phiA = BayesKernel::phi(cbs.sigma0, sNode);
+        }
+        else {
+          double s = bayesSigmaFromStErr(ss.evalStErr[j]);
+          nA = 1;
+          sA = s;
+          qA = s * s;
+          phiA = BayesKernel::phi(s, sNode);
+        }
+      };
 
       int rIdx = 0;
       for(int j = 1; j < k; j++) {
@@ -642,20 +642,30 @@ Loc Search::getChosenMoveLoc() {
           rIdx = j;
       }
       double Lr;
-      int64_t nRef;
+      bool refIsAnchor;
+      int64_t nR = 1;
+      double sR = 0.0, qR = 0.0, phiR = 0.0;
       if(cVisits[rIdx] >= 1 && cAvg[rIdx] >= 0.0) {
         Lr = 0.5 + mover * (cAvg[rIdx] - 0.5);
-        nRef = std::max(cVisits[rIdx], (int64_t)1);
+        refIsAnchor = false;
+        armAcc(rIdx, nR, sR, qR, phiR);
       }
       else {
+        //Anchor fallback: the reference level is the node's OWN eval,
+        //one lineage edge above every arm (2d-i registered form).
         Lr = 0.5 + mover * (rootNode->bayesState->anchMu - 0.5);
-        nRef = 1;
+        refIsAnchor = true;
       }
-      //2d-g contrast evidence noise vs the reference (pair-level form).
-      auto contrastNoise = [&](int64_t nA) -> double {
-        return vbar * (2.0 * (BAYES_W_IN - BAYES_W_CROSS)
-                       + (1.0 - BAYES_W_IN)
-                         * (1.0 / (double)nA + 1.0 / (double)nRef));
+      //Contrast evidence noise, arm a vs the reference.
+      auto contrastNoise = [&](int64_t nA, double sA, double qA, double phiA) -> double {
+        double varA = qA / ((double)nA * (double)nA);
+        if(refIsAnchor)
+          return varA + sNode * sNode
+                 - 2.0 * BayesKernel::A * phiA * sA * sNode / (double)nA;
+        double varR = qR / ((double)nR * (double)nR);
+        double cov = BayesKernel::A * phiA * phiR * sA * sR
+                     / ((double)nA * (double)nR);
+        return varA + varR - 2.0 * cov;
       };
 
       double logPr = std::log(std::max(ss.prior[rIdx], 1e-12));
@@ -671,12 +681,16 @@ Loc Search::getChosenMoveLoc() {
         bool haveEv = false;
         if(cVisits[j] >= 1 && cAvg[j] >= 0.0) {
           y = 0.5 + mover * (cAvg[j] - 0.5) - Lr;
-          nv = std::max(contrastNoise(std::max(cVisits[j], (int64_t)1)), 1e-9);
+          int64_t nA;
+          double sA, qA, phiA;
+          armAcc(j, nA, sA, qA, phiA);
+          nv = std::max(contrastNoise(nA, sA, qA, phiA), 1e-9);
           haveEv = true;
         }
         else if(ss.evaled[j]) {
           y = 0.5 + mover * (ss.evalWinrate[j] - 0.5) - Lr;
-          nv = std::max(contrastNoise(1), 1e-9);
+          double s = bayesSigmaFromStErr(ss.evalStErr[j]);
+          nv = std::max(contrastNoise(1, s, s * s, BayesKernel::phi(s, sNode)), 1e-9);
           haveEv = true;
         }
         else {
