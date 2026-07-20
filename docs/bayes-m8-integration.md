@@ -1804,3 +1804,18 @@ bayes-data/match-m8-2dm-B1024. Registered predictions:
   2 SE — i.e. the kernel does not regress the high-B regime.
 Confirmation rule: outside [-40, +40] -> one-look rerun at n
 sufficient for 600 distinct. Elo tunes nothing.
+
+## 2d-m first look (2026-07-20, append-only)
+
+n = 400 raw, 358 distinct (89.5% — the >= 300 distinct target met):
+W22 / L63 / D273, **deduped -40 +/- 9** — exactly on the band
+boundary. P-2dm1 boundary case; P-2dm2 marginal fail (bar -38, from
+the retired stack's -16 +/- 11 minus 2 SE). Reading so far: the
+kernel stack sits in the same weak high-B drift the retired stack
+showed (-16..-43 across 256-2048); the 2d-l prediction from neutral
+divergence was ~ -13, so either divergence quality at B = 1024 is
+slightly negative in play (the 500-visit label instrument would not
+resolve that) or this is band-edge noise. Per the registered rule
+the one-look confirmation at 600 distinct is IN FLIGHT
+(match-m8-2dm-B1024-confirm, n = 700 raw); the standing number is
+whatever the confirmation says.
