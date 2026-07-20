@@ -1348,3 +1348,37 @@ is the budget-generality, carried by the observable, not by pooling
 two differently-selected label sets into one intercept. All
 constants remain label-derived; Elo touches nothing. Consumer forms
 and ladder unchanged.
+
+## 2d-i ladder progress (2026-07-19, append-only)
+
+Steps 1-3 PASSED: build clean; 596 goldens byte-identical + full
+runtests; chooser mirror 12/12 exact; NEW full-tree recursion check
+(scratch acc_verify.py pattern: Python bottom-up recomputation of
+accN/accS/accQ from an audit-all dump) 24 nodes, 0 mismatches; smoke
+sane (breadth 1-5 / depth 6-14, the 2d-c deep-tree shape; no hangs).
+
+Step 4, z* RE-PIN (fresh m8-2cb dumps under the kernel engine, 324
+positions; 20 gap labels added to m8-extra-labels.jsonl; prior
+orphaned dumps preserved in m8-2cb-2dg-orphaned/):
+   z*  dev rate  dev mean                 CI  overall vs puct
+ 0.00     0.188   +0.0031  [-0.0215,+0.0298]  +0.0028
+ 0.25     0.077   +0.0169  [-0.0088,+0.0526]  +0.0027
+ 0.50     0.031   +0.0182  [-0.0011,+0.0527]  +0.0020
+ 0.75     0.009   +0.0029  (n=3)              +0.0016
+ 1.00+    <=0.006  ~0                          +0.0015
+No z clears the CI-excluding-0 branch (z=0.50 misses by 0.0011) —
+the registered fallback fires: **z* = 0.50, the argmax of deviation
+mean, reported honestly as parity-targeted.** REGIME NOTE, first
+time in the campaign: surviving deviations have POSITIVE labeled
+mean (+0.018 at 3.1%/move; under 2c-b's noise the ungated mean was
+-0.013 and the gate existed to suppress deviations). Configs updated:
+bayesContrastDeviationZ 1.25 -> 0.50 in contrastvoi_m8_gtp.cfg,
+bayes_m8_match.cfg, bayes_m8_match_2dc.cfg.
+
+Step 5 protocol note (two arms, both registered here before launch):
+primary = gated chooser on PUCT allocation (bayes_m8_match.cfg) —
+apples-to-apples with the standing budget curve and P-2di4/5/6;
+secondary = contrast-voi own allocation (bayes_m8_match_2dc.cfg),
+baseline the 2d-c results (-61/-118/-57 at 16/32/64). Cells run
+sequentially (one GPU), B = 16, 32, 64, n = 300 each, dirs
+bayes-data/match-m8-2di-B{16,32,64} and match-m8-2di-voi-B{16,32,64}.
