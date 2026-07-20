@@ -1301,3 +1301,50 @@ Disposition: if the fit fails P-2di1/2, the 2d-g constants stand and
 this doc records the kernel as refuted — the class model would then
 BE the law and budget-generality fails empirically, which is
 reportable. If matches fail P-2di4, ship state remains 2d-g.
+
+## 2d-i fit outcome + amendment 1 (2026-07-19, appended before the
+## amended pin run)
+
+Joint fit (m8_kernel_fit.py, registered protocol): A=0.515,
+theta0=0.95, gamma=1.00; boot gamma CI [0.40, 1.60].
+- P-2di2 PASSES: gamma > 0, CI excludes 0 — the head drop is the
+  fade carrier. Per-edge head retention differs by population in
+  the predicted direction: search-tree edges 0.918 (dwelling),
+  strong-play line edges 0.867 (resolving).
+- P-2di1 SCORED AS MISSED on its registered bar (kernel beats
+  gamma=0 by 0.5% joint SSE, bar was 30%): the bar was
+  mis-calibrated — z-product noise dominates SSE (zero-prediction
+  SSE 18571 vs kernel 17670; the entire explainable share is ~5%),
+  so no model can move joint SSE 30%. On the informative readout
+  (class/bucket means) the kernel reproduces the line gap curve
+  (obs/pred: 0.384/0.394, 0.204/0.257, 0.116/0.130, 0.053/0.047,
+  0.030/0.014), sidelines (0.185/0.157), cousins (0.268/0.290), and
+  — decisively — the WITHIN-TREE lineage/off-lineage split via edge
+  count alone: off/lineage corr ratio observed 0.40, predicted 0.42.
+  The 2d-g class model joint SSE 21646 (worse than zero-prediction
+  on lines: no gap axis).
+- P-2di3 (C2) PREMISE WRONG, informatively: in the 2d-f sample,
+  sibling@root obs 0.678 (top-subtree arms — the search's chosen
+  contenders), NOT the fresh-arm 0.26-0.29 of M1/2cb which pooled
+  all arms at fresh positions. Selection is the depth axis, not
+  depth itself.
+- SINGLE INTERCEPT REFUTED: per-population fits give A_tree=0.90
+  (theta0 0.86, gamma 1.5) vs A_line=0.45 (theta0 0.95, gamma 0.8).
+  Mean z^2 = 1.85 in trees vs 0.82 on lines: the head under-predicts
+  error exactly where the search dwells — the search SELECTS FOR
+  inherited bias (the M7 story, now measured as a population-level
+  selection effect). The shared fraction is selection-dependent; no
+  single A exists.
+
+AMENDMENT 1 (pin rule): the engine's noise model prices evals the
+engine itself averages — search-tree pairs are definitionally the
+consumer population. (A, theta0, gamma) are therefore pinned on the
+TREE pair set alone, with the A grid widened to [0.30, 1.00] (the
+registered ceiling 0.90 binds) and cluster-bootstrap CIs; the line
+population stands as the confirmation of the fade mechanism (P-2di2)
+and of the runtime behavior at depth: when the engine's own subtree
+lines resolve, their head drops are what the kernel consumes — that
+is the budget-generality, carried by the observable, not by pooling
+two differently-selected label sets into one intercept. All
+constants remain label-derived; Elo touches nothing. Consumer forms
+and ladder unchanged.
