@@ -1455,3 +1455,29 @@ primary; raw reported alongside for continuity; (b) confirmations
 target >= 300 DISTINCT games; (c) opening entropy stays as-is for
 comparability until a registered protocol change. Elo still tunes
 nothing. Raw SGF dirs are untouched (results append-only).
+
+## 2d-i-b registration (own-allocation attribution readout;
+## 2026-07-20, appended before the run)
+
+With the corrected scoreboard, the open deficit is own-allocation
+(contrast-voi, deduped -54..-92 across 2d-c/2d-i). Before any fix:
+attribute the loss channel with labels. Protocol: bayes_m7_replay.py
+--bots contrastvoi,puct --second-turn --limit 100 (fresh second-turn
+set, B = 64 both bots, inline 500-visit labels of both picks; output
+m8-2dib-replay.jsonl, append-only). Readouts: divergence rate;
+mean mover-perspective labeled quality difference (voi pick minus
+PUCT pick) overall and on divergences, cluster bootstrap by game;
+tree shape (breadth/maxdepth) alongside.
+
+Registered predictions/branches:
+- P-2dib1: voi's divergence rate from PUCT >= 15%/move (the
+  allocator changes evidence, not just the gate).
+- P-2dib2 (the decision): EITHER divergence quality is CI-negative
+  (voi's own trees mislead its root picks — evidence-corruption
+  channel; next rung targets allocation/consumption of own-tree
+  evidence, e.g. the 2d-j fresh-arm regime) OR quality ~ 0 while
+  the deduped Elo deficit stands (neutral-divergence tax ~ -1
+  Elo/%/move explains the loss; next rung targets divergence
+  REDUCTION, not quality). A positive-quality outcome with the
+  deficit standing would falsify the corrected law and reopen the
+  conversion channel (draw/decisive structure).
