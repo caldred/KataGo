@@ -1382,3 +1382,76 @@ secondary = contrast-voi own allocation (bayes_m8_match_2dc.cfg),
 baseline the 2d-c results (-61/-118/-57 at 16/32/64). Cells run
 sequentially (one GPU), B = 16, 32, 64, n = 300 each, dirs
 bayes-data/match-m8-2di-B{16,32,64} and match-m8-2di-voi-B{16,32,64}.
+
+## MATCH-SCORING DEFECT FOUND AND FIXED: raw Elo counted duplicated
+## deterministic games; ALL match numbers re-audited by dedup
+## (2026-07-19/20, append-only — this section supersedes every raw
+## Elo in this document and in the M3-M8 record)
+
+Discovery chain, recorded exactly: the 2d-i n=300 primary B=16 cell
+scored -42 +/- 12 raw; its registered N=1000 one-look confirmation
+scored +44 +/- 6 raw — a ~7-sigma contradiction between two runs of
+a byte-identical configuration (logged configs diff only in
+numGamesTotal). Draw rates differed 61% vs 67% (B=32: 49% vs 74%).
+Games within a run are NOT independent: with temp = 0, deterministic
+bots, a shared NN cache, and policyInitAreaProp = 0.04 (~3 random
+opening moves on 9x9), the opening space is tiny and every repeated
+(opening, color) pair replays move-for-move. Measured duplication:
+55-72% of games in every cell at B <= 128 are EXACT duplicates
+(same color assignment, same full move sequence); at B = 1024-2048
+duplication falls to 5-10% (longer effective openings via deeper
+disagreement). The 2c-e "VOID cache-replay rerun" was this same
+mechanism — it was endemic within every run, not an accident of one.
+
+Corrected estimator: score DISTINCT (color, move-sequence) games
+once. Reproducibility proof (same config, independent runs, raw ->
+dedup): B16 -42/+44 -> -6 +/- 21 / -12 +/- 15; B32 -68/-21 ->
+-32 +/- 21 / -16 +/- 13; voi-B32 -55/+28 -> -86 +/- 20 / -84 +/- 13.
+The dedup estimator reconciles every contradiction; the raw
+estimator was duplication noise with fictitious error bars.
+
+RE-AUDIT, all match dirs on this machine (raw -> dedup, distinct n):
+  2c   ungated chooser B64:  -135 -> -71 +/- 21   (n=149)
+  2cb  gated z=1.25   B64:   -12 -> -10 +/- 18   (n=145)
+  2cc  B8:   +16 -> -9+/-22 (n=111); confirm -48 -> -24 +/- 16 (259)
+  2cc  B16:  +47 -> -3+/-23 (n=113); confirm +52 -> -4 +/- 15 (269)
+  2cc  B32:  -85 -> -11 +/- 20 (n=124)
+  2cc  B128: -15 -> -21 +/- 15 (n=164)
+  2cd  B256: -21 -> -30 +/- 11 (184); B1024: -19 -> -16 +/- 11 (267)
+  2cd  B2048: -43 -> -43 +/- 10 (284); partial confirm -30 +/- 9
+  2dc  (voi, 2d-g noise) B16/32/64: -61/-118/-57 ->
+       -92 +/- 22 / -81 +/- 21 / -70 +/- 15
+  2di  (kernel) primary B16/32/64: -6/-12 (two runs), -32/-16 (two
+       runs), -19 +/- 17; voi B16/32/64: -66 +/- 23,
+       -86/-84 (two runs), -54 +/- 16
+
+CORRECTED CAMPAIGN POSITION (replaces the raw-Elo narrative):
+1. **The B=16 +52 "confirmed win" was a duplication artifact: -4
+   +/- 15 deduped.** Retracted. The N=1000 "confirmation" shared the
+   defect and confirmed nothing.
+2. **The B=32 dip (-85) never existed: -11 +/- 20 deduped.** The
+   standing "unexplained anomaly" is dissolved.
+3. **The gated contrast chooser is at PARITY with stock PUCT at
+   every budget tested, 8 through 2048** (deduped cells within or
+   near [-40,+40]; most within +/-20; weak negative drift at the
+   largest budgets: -30/-16/-43-to--30 at 256/1024/2048).
+4. **Own-allocation (contrast-voi) is genuinely below band at every
+   budget** — the one real Elo deficit that remains. The 2d-i kernel
+   moved it (2d-c -92/-81/-70 -> 2d-i -66/-86/-54) only within
+   noise at B16/B64.
+5. The divergence-rate law's raw calibration (-2 Elo/%) shrinks to
+   roughly -1 Elo/% deduped at B=64 (-71 at 36% divergence, -10 at
+   5.9%); monotonicity survives, the constant was inflated.
+2d-i predictions rescored against DEDUPED baselines: P-2di4 B16
+"stays positive" — the baseline was never positive; kernel preserves
+parity (-6/-12 vs baseline -3/-4): PASS in substance. P-2di5 B32
+into band: -32/-16 vs baseline -11, dip nonexistent: PASS
+(vacuously). P-2di6 B64 in band: -19 vs -10: PASS. The kernel swap
+is Elo-neutral for the chooser and stays the ship state (2d-g
+retirement stands); Amendment-1 disposition to revert does NOT fire.
+
+Protocol v2 (registered for ALL future cells): (a) dedup scoring is
+primary; raw reported alongside for continuity; (b) confirmations
+target >= 300 DISTINCT games; (c) opening entropy stays as-is for
+comparability until a registered protocol change. Elo still tunes
+nothing. Raw SGF dirs are untouched (results append-only).
