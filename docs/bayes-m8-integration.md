@@ -982,3 +982,29 @@ no consumer touches. The sequence stands as registered in 2d-e:
 currency from the measured covariance (own registration — fitting a
 generative field, e.g. an AR-on-tree kernel, happens there and only
 against this table); (iii) the ladder again.
+
+## 2d-g registration (kernel measurement accuracy; 2026-07-19,
+## appended before any run — sim or desktop)
+
+2d-f stands as registered. This rung exists because 2d-f's own-node
+labels come from 500-visit searches by the SAME net being measured:
+by the resolution limit (the flat noise curve), the label retains a
+fraction a of the regional error component, so every off-diagonal
+entry of the measured table is attenuated by (1-a)^2 — a bias more
+2d-f data cannot reduce, which also makes M1's rho = 0.26 a lower
+bound rather than an estimate. Attenuation is ~uniform, so 2d-f's
+SHAPE predictions (P-2df4, cousin-gap sign) remain valid; absolute
+entries and any entry-vs-squared-entry family test do not.
+
+Full design, moment system, and identifiability analysis:
+bmcts docs/measurement-2dg.md (registered predictions P-sim1..4 for
+the local synthetic estimator-validation gate, P-2dg1..4 for the
+desktop rung). Headline design: (i) repeat labels (independent
+seeds) pin label idiosyncratic noise; (ii) MIXED-REFEREE products —
+each pair member labeled by a different independently-trained net —
+are the unbiased instrument for absolute entries; (iii) referee
+independence is tested by assignment-swap overidentification, not
+assumed; (iv) matched-Pearson normalization + depth strata + cluster
+CIs replace the pooled normalizer. Sim gate runs locally BEFORE any
+desktop GPU time; desktop rung writes m8-desc-labels-2dg.jsonl only
+(the registered 2d-f file is never touched).
