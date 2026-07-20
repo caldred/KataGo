@@ -627,17 +627,13 @@ Loc Search::getChosenMoveLoc() {
       }
       double vbar = s2n > 0 ? s2sum / (double)s2n
                             : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
-      //M8 2d-d per-arm evidence noise: head claim at n <= 2, observed
-      //volatility (floored by a quarter of the head claim) at n >= 3;
-      //no division by n (the 2d-b flat curve).
-      auto armNoise = [&](int j) -> double {
-        double sHead = ss.evaled[j] ? bayesSigmaFromStErr(ss.evalStErr[j])
-                                    : std::sqrt(vbar);
-        double s2 = sHead * sHead;
-        if(cVisits[j] >= 3 && cVObs[j] >= 0.0)
-          return std::max(cVObs[j], 0.25 * s2);
-        return s2;
-      };
+      //M8 2d-g (docs/bayes-m8-integration.md): variogram-derived
+      //two-level nested noise. Label-pinned constants from the 2d-f
+      //measurement; the contrast floor 2(w_in - w_cross) vbar is
+      //permanent — claimed contrast precision is bounded by measurement.
+      const double BAYES_W_IN = 0.65;
+      const double BAYES_W_CROSS = 0.29;
+      (void)cVObs;  //2d-d volatility proxy refuted; fields still dumped
 
       int rIdx = 0;
       for(int j = 1; j < k; j++) {
@@ -645,15 +641,22 @@ Loc Search::getChosenMoveLoc() {
            || (cVisits[j] == cVisits[rIdx] && ss.prior[j] > ss.prior[rIdx]))
           rIdx = j;
       }
-      double Lr, vLr;
+      double Lr;
+      int64_t nRef;
       if(cVisits[rIdx] >= 1 && cAvg[rIdx] >= 0.0) {
         Lr = 0.5 + mover * (cAvg[rIdx] - 0.5);
-        vLr = armNoise(rIdx);
+        nRef = std::max(cVisits[rIdx], (int64_t)1);
       }
       else {
         Lr = 0.5 + mover * (rootNode->bayesState->anchMu - 0.5);
-        vLr = rootNode->bayesState->anchVar;
+        nRef = 1;
       }
+      //2d-g contrast evidence noise vs the reference (pair-level form).
+      auto contrastNoise = [&](int64_t nA) -> double {
+        return vbar * (2.0 * (BAYES_W_IN - BAYES_W_CROSS)
+                       + (1.0 - BAYES_W_IN)
+                         * (1.0 / (double)nA + 1.0 / (double)nRef));
+      };
 
       double logPr = std::log(std::max(ss.prior[rIdx], 1e-12));
       int jBest = rIdx;
@@ -668,14 +671,12 @@ Loc Search::getChosenMoveLoc() {
         bool haveEv = false;
         if(cVisits[j] >= 1 && cAvg[j] >= 0.0) {
           y = 0.5 + mover * (cAvg[j] - 0.5) - Lr;
-          nv = std::max((1.0 - rho) * (armNoise(j) + vLr), 1e-9);
+          nv = std::max(contrastNoise(std::max(cVisits[j], (int64_t)1)), 1e-9);
           haveEv = true;
         }
         else if(ss.evaled[j]) {
-          double s2 = bayesSigmaFromStErr(ss.evalStErr[j]);
-          s2 = s2 * s2;
           y = 0.5 + mover * (ss.evalWinrate[j] - 0.5) - Lr;
-          nv = std::max((1.0 - rho) * (s2 + vLr), 1e-9);
+          nv = std::max(contrastNoise(1), 1e-9);
           haveEv = true;
         }
         else {

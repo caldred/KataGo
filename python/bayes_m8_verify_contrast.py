@@ -38,6 +38,7 @@ def python_pick(rec):
     s2s = [sig2(a["evalStErr"]) for a in arms if a["evaled"]]
     vbar = sum(s2s) / len(s2s) if s2s else p["defaultSigma"] ** 2
 
+    W_IN, W_CROSS = 0.65, 0.29  # 2d-g label-pinned kernel constants
     r = 0
     for j in range(1, k):
         if (arms[j]["childVisits"], arms[j]["prior"]) > \
@@ -46,10 +47,15 @@ def python_pick(rec):
     ar = arms[r]
     if ar["childVisits"] >= 1 and ar["childAvg"] >= 0:
         Lr = 0.5 + mover * (ar["childAvg"] - 0.5)
-        vLr = vbar / max(ar["childVisits"], 1)
+        n_ref = max(ar["childVisits"], 1)
     else:
         Lr = 0.5 + mover * (rec["anchMu"] - 0.5)
-        vLr = rec["anchVar"]
+        n_ref = 1
+
+    def contrast_noise(n_a):
+        return vbar * (2.0 * (W_IN - W_CROSS)
+                       + (1.0 - W_IN) * (1.0 / n_a + 1.0 / n_ref))
+
     logpr = math.log(max(ar["prior"], 1e-12))
     jbest, gbest = r, 0.0
     for j, a in enumerate(arms):
@@ -59,14 +65,12 @@ def python_pick(rec):
         pv = 2.0 * sr2
         if a["childVisits"] >= 1 and a["childAvg"] >= 0:
             y = 0.5 + mover * (a["childAvg"] - 0.5) - Lr
-            nv = max((1 - rho) * vbar / max(a["childVisits"], 1)
-                     + (1 - rho) * vLr, 1e-9)
+            nv = max(contrast_noise(max(a["childVisits"], 1)), 1e-9)
             w = pv / (pv + nv)
             gm = pm + w * (y - pm)
         elif a["evaled"]:
             y = 0.5 + mover * (a["evalWinrate"] - 0.5) - Lr
-            nv = max((1 - rho) * sig2(a["evalStErr"]) + (1 - rho) * vLr,
-                     1e-9)
+            nv = max(contrast_noise(1), 1e-9)
             w = pv / (pv + nv)
             gm = pm + w * (y - pm)
         else:

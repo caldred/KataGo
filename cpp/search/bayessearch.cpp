@@ -578,23 +578,23 @@ void Search::bayesSelectBestChildToDescend(
     }
     double vbar = s2n > 0 ? s2sum / (double)s2n
                           : searchParams.bayesDefaultSigma * searchParams.bayesDefaultSigma;
-    //M8 2d-d per-arm evidence noise (same rule as the chooser).
-    auto armNoise = [&](int j) -> double {
-      double sHead = ss.evaled[j] ? bayesSigmaFromStErr(ss.evalStErr[j])
-                                  : std::sqrt(vbar);
-      double s2h = sHead * sHead;
-      if(nVis[j] >= 3 && cVObs[j] >= 0.0)
-        return std::max(cVObs[j], 0.25 * s2h);
-      return s2h;
-    };
+    //M8 2d-g variogram-derived nested noise (same constants as the
+    //chooser; docs/bayes-m8-integration.md 2d-g registration).
+    const double BAYES_W_IN = 0.65;
+    const double BAYES_W_CROSS = 0.29;
+    (void)cVObs;  //2d-d volatility proxy refuted; fields still dumped
     int rIdx = 0;
     for(int j = 1; j < ss.k; j++) {
       if(nVis[j] > nVis[rIdx] || (nVis[j] == nVis[rIdx] && ss.prior[j] > ss.prior[rIdx]))
         rIdx = j;
     }
-    double vLr = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
-                 ? armNoise(rIdx)
-                 : node.bayesState->anchVar;
+    int64_t nRef = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
+                   ? std::max(nVis[rIdx], (int64_t)1) : 1;
+    auto contrastNoise = [&](int64_t nA) -> double {
+      return vbar * (2.0 * (BAYES_W_IN - BAYES_W_CROSS)
+                     + (1.0 - BAYES_W_IN)
+                       * (1.0 / (double)nA + 1.0 / (double)nRef));
+    };
     double Lr = (nVis[rIdx] >= 1 && cAvg[rIdx] >= 0.0)
                 ? 0.5 + moverSign * (cAvg[rIdx] - 0.5)
                 : 0.5 + moverSign * (node.bayesState->anchMu - 0.5);
@@ -610,15 +610,13 @@ void Search::bayesSelectBestChildToDescend(
       bool haveEv = false;
       if(nVis[j] >= 1 && cAvg[j] >= 0.0) {
         y = 0.5 + moverSign * (cAvg[j] - 0.5) - Lr;
-        nv = (1.0 - rho) * (armNoise(j) + vLr);
+        nv = contrastNoise(std::max(nVis[j], (int64_t)1));
         nvNext = nv;  //2d-c: D dropped; kept only for dead-code symmetry
         haveEv = true;
       }
       else if(ss.evaled[j]) {
-        double s2 = bayesSigmaFromStErr(ss.evalStErr[j]);
-        s2 = s2 * s2;
         y = 0.5 + moverSign * (ss.evalWinrate[j] - 0.5) - Lr;
-        nv = (1.0 - rho) * (s2 + vLr);
+        nv = contrastNoise(1);
         nvNext = nv;
         haveEv = true;
       }
@@ -633,29 +631,9 @@ void Search::bayesSelectBestChildToDescend(
       else {
         gm[j] = pm;
         gv[j] = pv;
-        double nv1 = std::max((1.0 - rho) * (vbar + vLr), 1e-9);
-        gvNext[j] = pv * nv1 / (pv + nv1);
       }
     }
-    //Reference visit: vLr' tightens every arm's evidence noise.
-    double vLrNext = vbar / (double)(std::max(nVis[rIdx], (int64_t)0) + 1);
-    double dRef = 0.0;
-    for(int j = 0; j < ss.k; j++) {
-      if(j == rIdx || ss.terminalEvaled[j])
-        continue;
-      double nv2;
-      if(nVis[j] >= 1 && cAvg[j] >= 0.0)
-        nv2 = (1.0 - rho) * (vbar / (double)nVis[j] + vLrNext);
-      else if(ss.evaled[j]) {
-        double s2 = bayesSigmaFromStErr(ss.evalStErr[j]);
-        nv2 = (1.0 - rho) * (s2 * s2 + vLrNext);
-      }
-      else
-        continue;  //prior-only arms carry no Lr term yet
-      nv2 = std::max(nv2, 1e-9);
-      double v2 = pv * nv2 / (pv + nv2);
-      dRef += std::max(gv[j] - v2, 0.0);
-    }
+    (void)rho;  //superseded for contrasts by w_cross (2d-g registration)
     //Contested weights + overlap from the contrast field (ref at 0).
     std::vector<double> fieldMu(ss.k), fieldVar(ss.k);
     for(int j = 0; j < ss.k; j++) {
@@ -676,7 +654,6 @@ void Search::bayesSelectBestChildToDescend(
     //resolution AT THE DECISION BOUNDARY: score = contested alone at
     //the root, local w at interior nodes (PV extension).
     (void)gvNext;
-    (void)dRef;
     for(int j = 0; j < ss.k; j++) {
       scoreV[j] = contested[j];
       tieV[j] = (j == rIdx) ? 0.0 : gm[j];
