@@ -869,6 +869,42 @@ object in its simplest sufficient form. Next rung (own registration):
 derive contrast evidence noise + allocation currency from this
 variogram (nested-effects/distance-kernel form), then the ladder.
 
+## 2d-g registration (variogram-derived noise; appended before
+## implementation)
+
+Model (from 2d-f; the P-2df4 gap-persistence miss is the structure):
+TWO-LEVEL NESTED covariance — within-root-arm plateau w_in = 0.65
+(the AD/sibling plateau), cross-arm w_cross = 0.29 (cousin-root
+0.288), idiosyncratic 1 - w_in = 0.35. Pins are label-derived (2d-f
+table), never Elo-derived. Cross-checks satisfied by construction:
+subtree-average error sigma^2 [w_in + (1-w_in)/n] reproduces the
+2d-b flat curve; root-contrast noise at n = 1 gives
+2 sigma^2 (1 - w_cross) = 1.42 sigma^2 = the measured fresh
+cousin-root pair variance.
+
+Consumer forms (both chooser and selection; replaces the refuted 2d-d
+volatility noise AND the (1-rho) prefactor — rho = 0.26 was the
+fresh-sibling eval correlation, superseded for root contrasts by
+w_cross):
+  contrast evidence noise, arm a vs reference r:
+    nv_a = vbar * [ 2 (w_in - w_cross) + (1-w_in)(1/n_a + 1/n_r) ]
+  (n = subtree evals, >= 1; eval-only arms n = 1; the floor
+  2(w_in - w_cross) = 0.72 vbar is permanent — claimed contrast
+  precision is bounded, by measurement.)
+  Prior contrast variance pv = 2 sigma_r^2 unchanged. Allocator:
+  2d-c contested-only, inheriting the floored posteriors.
+
+Protocol: implement; goldens + suite; chooser mirror re-verified
+(>= 10 positions exact); tree-shape smoke; z* RE-PINNED via the 2c-b
+ladder machinery on fresh dumps under the new noise (labels only —
+the old 1.25 was pinned under the old noise and is void); then the
+match ladder B = 16/32/64 vs stock PUCT, n = 300, with the 2c-c
+confirmation rule (N = 1000, one look) for any point outside
+[-40, +40]. Registered predictions: P-2dg1 the floor cuts the
+deviation rate at high verification and the B=32 dip shrinks
+materially; P-2dg2 B=16 stays positive; P-2dg3 B=64 within the
+parity band or better.
+
 ## Phase 2 (forward commitments, own docs before any run)
 
 - bmcts twin: a deep-verified-line cell class (depth >= 8, allocation
