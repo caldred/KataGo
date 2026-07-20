@@ -1008,3 +1008,104 @@ assumed; (iv) matched-Pearson normalization + depth strata + cluster
 CIs replace the pooled normalizer. Sim gate runs locally BEFORE any
 desktop GPU time; desktop rung writes m8-desc-labels-2dg.jsonl only
 (the registered 2d-f file is never touched).
+
+## 2d-fg-local registration (laptop execution of the 2d-f + 2d-g
+## protocols on locally regenerated dumps; 2026-07-20, appended
+## before any run)
+
+The desktop m8-audit dumps are unavailable to the laptop, so the
+kernel measurement runs HERE on freshly generated inputs. Deviations
+from the desktop registrations, all recorded: (i) position source =
+the local match-2ce-B64 archive (policy-vs-puct 9x9 komi-7 games),
+one mid-game position per game (turn ~ U[10,28], seeded by gameHash),
+first 60 games by hash — a different position slice than the
+leak-ranked M7 audit set; the estimand (first-eval error covariance
+of the b18 net by tree relationship) is unchanged, the reachable-
+position measure differs and is recorded; (ii) engine = the SAME
+branch/code, Eigen backend (numerical differences to CUDA are
+sub-noise for winrates); (iii) dumps regenerated with
+hybrid_m7_gtp.cfg + KATAGO_BAYES_AUDIT_ALL at the same B=64 scale;
+(iv) all outputs to bayes-data-local/ — no registered desktop file is
+read or written. Referee choice (runbook Step 0): B =
+g170-b6c96-s175395328, C = g170e-b10c128-s1141046784 — both from the
+g170 run (independent of the kata1 workhorse, the A-independence that
+de-biases); CAVEAT owned: B and C share the g170 lineage with each
+other, so the second-order mixed-product bias a_B*a_C*C_BC is not
+ideally suppressed; the B-C same-position gap and same-referee vs
+mixed tables quantify it. Protocol and analysis scripts byte-identical
+imports (pick_nodes, Engine, m8_variogram_clean, m8_variogram_v2).
+Predictions: P-2df1..4 and P-2dg1..4 as registered, scored on the
+local tables; the desktop rung on the original dumps remains open as
+the cross-check.
+
+## 2d-fg-local outcome (2026-07-20, append-only) — the first clean +
+## referee-validated kernel tables; AR signature lands; the retention
+## worry REFUTED for this net
+
+Overnight laptop run per the 2d-fg-local registration: 60 positions,
+493 b18 own-labels (2d-f protocol), 1158 referee/repeat labels (2d-g),
+analyses in bmcts results/variogram-2dg.json + pipeline.log.
+
+**Clean 2d-f table** (own labels, registered estimator; cluster CIs):
+sibling 0.410 [.18,.61] | parent-child 0.672 [.52,.79] | ad-gap2
+0.589 [.41,.75] | ad-gap3+ 0.614 [.33,.83] | cousin-near 0.334
+[.15,.51] | cousin-root 0.306 [-.00,.56]. Distance decay:
+0.67/0.51/0.40/0.26 then floor ~0.30.
+
+- **P-2df1 CONFIRMED**: AD entries 0.59-0.67 with own labels — the
+  assumed-zero was wrong by the scale of the phenomenon, now shown
+  without the shared-label drift artifact.
+- **P-2df2 CONFIRMED**: every clean entry below its 2d-e counterpart
+  (0.41<1.13, 0.59<0.87, 0.61<0.67 — the last barely; cross-slice
+  comparison caveat recorded).
+- **P-2df3 CONFIRMED** (T-same): cousin-root smallest; within-subtree
+  minus cousin gap ~0.3 survives de-drifting.
+- **P-2df4 PARTIAL**: AD decreases with gap then floors; cousin-near >
+  cousin-root weakly in T-same but INVERTED in T-ref (0.33 vs 0.46,
+  CIs overlap; n=60 games is thin for cousin classes — unresolved).
+
+**Mixed-referee table T-ref** (the unbiased instrument): sibling
+0.585 [.32,.85] | parent-child 0.759 [.58,.95] | ad-gap2 0.474 |
+ad-gap3+ 0.468 | cousin-near 0.330 | cousin-root 0.459. Diagonal:
+sigma_eps(b18 first eval, 9x9 midgame) = sqrt(0.0143) ~ 0.12 winrate.
+
+- **P-2dg1 CONFIRMED**: repeat-label noise 2sigma_nu^2 = 2.0% of msq —
+  labels are systematic, not noisy.
+- **P-2dg2 REFUTED** — the surprise: mixed/same-net inflation median
+  1.06 (predicted > 1.3). The same-net retention-cancellation bias,
+  mechanically real in the sim, is EMPIRICALLY SMALL for this net at
+  500 visits: recovered retention a-hat ~ 0 (point estimates straddle
+  0). Consequence, stated plainly: **the "M1 rho=0.26 is a lower
+  bound" concern is SOFTENED — same-net-labeled tables are
+  approximately unbiased on this data**, and 500-visit search
+  apparently RESOLVES the regional bias (reading adds fresh
+  information) rather than retaining it. The remaining M1-vs-here
+  sibling gap (0.26 vs 0.41-0.59) is estimand/position-slice, not
+  attenuation.
+- Companion discovery from the moment system: same-net residual msq
+  (0.0267) EXCEEDS the referee-estimated eval-error variance
+  (0.0143): the deep label carries its own systematic error of
+  comparable scale (~0.11) largely fresh w.r.t. the first eval, and
+  label errors at related positions correlate (the §5 nu-independence
+  caveat is real) — same-net tables are denominator-inflated AND
+  numerator-inflated in partial compensation. The referee
+  triangulation flagged it exactly as designed: B-C same-position gap
+  (0.0106) < A-B (0.0268), consistent with the owned B-C lineage
+  caveat plus A-label own-error.
+- **P-2dg3 CONFIRMED** (0.585 > 0.26). **P-2dg4**: one-chain identity
+  on T-ref: sibling 0.585 vs pc^2 = 0.576 — **SATISFIED, essentially
+  with equality**. sib = pc^2 is the exact AR(1)-on-tree signature
+  (theory doc §3(b)); the line-persistent anisotropy hypothesis (§3d),
+  motivated by the M1-vs-2d-e tension, is DISFAVORED: the tension was
+  an artifact of comparing incompatible estimators. Kernel-family
+  verdict per the registered rule: **one-chain AR-on-tree is viable
+  and leading**, phi ~ 0.67-0.76, with a possible small persistent
+  floor (~0.3 at distance >= 4).
+
+Caveats owned: n=60 games (cousin CIs wide, even/odd splits unstable
+for cousin-near); local position slice; Eigen; referee cross-net bias
+not fully excluded (all Go nets share some misconceptions — T-ref is
+least-biased, not bias-free). Next, each own registration: (ii-fit)
+fit AR-family + floor to T-ref, re-derive contrast noise + currency
+constants; desktop cross-check on the original audit dumps when
+available; more positions if the family fit is CI-limited.
