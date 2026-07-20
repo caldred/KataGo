@@ -1619,3 +1619,65 @@ P(floor moves | tip stErr trajectory)); (ii) hybrid score
 contested_j x Var_j/(n_j+1) — the measured best ranker inside the
 decision-relevance frame, one line of code, no new constants,
 directly attacks lock-in; (iii) both, laddered. Elo tunes nothing.
+
+## 2d-l registration (high-budget deviation ladder: does z* = 0.50
+## hold at B = 1024? 2026-07-20, appended before any run)
+
+Purpose: z* = 0.50 was pinned on B = 64 dumps. The kernel claims
+budget-generality — claimed contrast precision is derived from the
+tree, so ONE gate constant should stay calibrated as budgets grow.
+That claim gets a label-based test BEFORE the registered B = 1024
+match (2d-m below), so any out-of-band match result has attribution
+groundwork.
+
+Protocol: 2cb machinery at B = 1024 — every 3rd fresh second-turn
+position (~108), contrast_m8_gtp.cfg with -override-config
+maxVisits=1024, dumps to bayes-data/m8-2cb-B1024/, engine moves to
+m8-2cb-B1024-moves.jsonl; missing (position, move) labels added to
+m8-extra-labels.jsonl (500-visit labels as always); the same ladder
+readout (bayes_m8_2cb_analyze.py with --dumps m8-2cb-B1024).
+Note the 500-visit label convention: at B = 1024 the bot searches
+DEEPER than the labeler; labels remain the registered common
+currency (both bots' picks scored identically), acknowledged as a
+conservative instrument at this budget.
+
+Registered predictions:
+- P-2dl1: deviation rate at z* = 0.50 stays within 2x of the B=64
+  rate (3.1%/move) — the kernel's noise scaling keeps the gate
+  calibrated without a budget knob.
+- P-2dl2: surviving deviations' labeled mean stays >= 0 (CI not
+  excluding 0 from below). If instead CI-negative, z* = 0.50 is
+  miscalibrated at high B; the 2d-m match still runs as registered
+  (with the expectation adjusted to below-band drift) and the
+  ladder output becomes the attribution.
+No re-pin from this data (that would be budget-indexed tuning);
+this rung is validation + attribution groundwork only.
+
+## Protocol decision (registered, 2026-07-20): opening entropy
+## stays unchanged
+
+Decision: policyInitAreaProp stays 0.04 for all M8 cells. Rationale:
+dedup scoring already corrects the inference defect; raising
+entropy would fork the protocol mid-campaign and break
+comparability with every corrected historical cell; and duplication
+falls naturally at high budgets (5-10% at B >= 1024) where the
+remaining questions live. A protocol-v3 entropy increase is
+deferred to a future campaign boundary (e.g. the paper's final
+confirmation runs), where it would be registered fresh.
+
+## 2d-m registration (the B = 1024 match; appended before launch,
+## runs after 2d-l and the open engineering items settle)
+
+Chooser arm only (bayes_m8_match.cfg — kernel noise, z* = 0.50,
+PUCT allocation; the voi arm awaits its allocator rung). B = 1024,
+n = 400 raw targeting >= 300 distinct (2c-d precedent: ~90%
+distinct at this budget), dedup primary + raw alongside, dir
+bayes-data/match-m8-2dm-B1024. Registered predictions:
+- P-2dm1: deduped Elo within [-40, +40] (parity extends to
+  production-scale budgets under the kernel with one global z*).
+- P-2dm2: given the deduped high-B drift of the RETIRED stack
+  (-30/-16/-30..-43 at 256/1024/2048), the kernel stack lands no
+  worse than the retired stack's B=1024 value (-16 +/- 11) minus
+  2 SE — i.e. the kernel does not regress the high-B regime.
+Confirmation rule: outside [-40, +40] -> one-look rerun at n
+sufficient for 600 distinct. Elo tunes nothing.
