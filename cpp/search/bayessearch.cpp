@@ -739,7 +739,15 @@ void Search::bayesSelectBestChildToDescend(
     //the root, local w at interior nodes (PV extension).
     (void)gvNext;
     for(int j = 0; j < ss.k; j++) {
-      scoreV[j] = contested[j];
+      //2d-k-b (docs/bayes-m8-integration.md, registered shootout: H
+      //pins at 0.868 top-quartile capture): the ROOT score prices
+      //decision relevance x remaining contrast uncertainty x
+      //diminishing returns. The reference arm's gv ~ 0 kills its score
+      //once it holds the visit lead — the 2d-i-b hoarding lock-in ends
+      //by construction. Interior nodes keep the 2d-c w-routing.
+      scoreV[j] = isRoot
+        ? contested[j] * gv[j] / ((double)nVis[j] + 1.0)
+        : contested[j];
       tieV[j] = (j == rIdx) ? 0.0 : gm[j];
       resolvedV[j] = false;
     }

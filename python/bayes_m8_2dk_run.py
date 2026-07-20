@@ -24,9 +24,10 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--data", required=True)
     ap.add_argument("--n", type=int, default=40)
+    ap.add_argument("--outdir", default="m8-2dk")
     args = ap.parse_args()
     data = Path(args.data)
-    outdir = data / "m8-2dk"
+    outdir = data / args.outdir
     outdir.mkdir(exist_ok=True)
     positions, _ = parse_games(args.data)
     picked = positions[::8][:args.n]
