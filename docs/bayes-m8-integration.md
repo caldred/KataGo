@@ -1695,6 +1695,52 @@ the repo): python python/bayes_m8_dedup_score.py match-2ce-B8
 match-2ce-B16 match-2ce-B32 match-2ce-B64. Do not cite 2c-e margins
 until then.
 
+## 2d-k-b registration (successor allocator rung: tip-instrumented
+## measurement + candidate shootout; 2026-07-20, appended before any
+## collection or code)
+
+With the leafReveal instrument in place (per-playout tip-edge head
+ratios now observable), re-run the 2d-k Step-1 measurement properly
+and pin ONE of two root-score candidates by a registered decision
+rule. Root-only change: interior w-routing keeps its 2d-c form; the
+lock-in is at the root (2d-i-b).
+
+Candidates (per root arm j, replacing 2d-c's contested-only score):
+- H (hybrid, zero new constants):
+    score_j = contested_j * gv_j / (n_j + 1)
+  gv_j = the arm's posterior contrast variance already computed by
+  the selection code (unevaled arms: gv = pv). The reference arm's
+  gv ~ 0 kills its score once it holds the visit lead — hoarding
+  ends by construction; a challenger that overtakes becomes the new
+  reference. Prices decision relevance x remaining uncertainty x
+  diminishing returns.
+- T (tip-mixture, needs constants + per-arm state): E[DeltaVar_j] =
+  p_res(lastTipRatio_j) * D_res with p_res and D_res fit from the
+  instrumented trajectories; requires storing lastTipRatio per node.
+
+Measurement: ~40 audited contrastvoi trajectories at B = 64 with the
+NEW binary (leafReveal active), same every-8th m5 sampling, fresh
+dir m8-2dkb/. Per root-arm per-eval event: realized DeltaVar (and
+Delta gv), the playout's tip-edge ratio (from leafReveal), and arm
+state. Decision rule (registered): compute top-quartile capture of
+realized positive DeltaVar mass and Spearman rank correlation for
+both candidates' rankers on these events; pin the winner on capture;
+ties within 5 points of capture -> H (parsimony). If NEITHER
+candidate reaches 40% capture, no allocator ships this rung and the
+voi arm stays closed (record and stop).
+
+If a candidate pins: implement at the root in
+bayesSelectBestChildToDescend (contrast branch only); gates = build,
+goldens + full suite, tree-shape smoke (breadth must rise vs the
+2d-i-b lock-in signature), then the dedup match ladder voi arm
+B = 16/32/64, n = 300. Registered predictions:
+- P-2dkb1: divergent-pick visit hoarding drops (median chosen-arm
+  share at divergences well below 63/64).
+- P-2dkb2: deduped voi Elo improves at every budget vs 2d-i's
+  -66/-86/-54, by more than 1 SE at B = 64.
+- P-2dkb3: chooser-arm cells unaffected (no shared code path).
+Elo tunes nothing; the pin is from trajectory data only.
+
 ## 2d-m registration (the B = 1024 match; appended before launch,
 ## runs after 2d-l and the open engineering items settle)
 
