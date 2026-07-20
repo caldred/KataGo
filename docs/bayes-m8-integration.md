@@ -1481,3 +1481,36 @@ Registered predictions/branches:
   REDUCTION, not quality). A positive-quality outcome with the
   deficit standing would falsify the corrected law and reopen the
   conversion channel (draw/decisive structure).
+
+## 2d-i-b outcome (2026-07-20, append-only) — THE DEFICIT IS
+## ALLOCATION LOCK-IN
+
+100 positions, B = 64 both bots, all picks labeled. Divergence rate
+27% (P-2dib1 confirmed, >= 15%). Divergence quality -0.044 mean,
+cluster-boot CI [-0.095, +0.010] — negative-leaning, not quite
+CI-negative; overall -0.012/move. Tree shape breadth 3.1 /
+maxdepth 10.3. Sub-cut, the decisive fact: **every one of the 27
+divergent picks is THICK — 20/27 carry ~the entire budget in the
+chosen arm (chosen_visits = 63 of B = 64)**. The 2d-j fresh-arm
+hypothesis is refuted for this channel (no thin picks exist to
+mis-price). Attribution: the 2d-c contested-only root score
+TUNNELS — one contested arm wins the argmax early, all visits flow
+there, the kernel legitimately sharpens that arm's evidence, the
+arm becomes the max-visits reference, and the pick follows the
+allocation. Divergence rate AND quality are both consequences of
+single-arm lock-in: the allocator never buys evidence on the OTHER
+side of the decision boundary.
+
+Design frame for the next rung (registration to follow, own
+section): the root score must price the DECISION, not the arm —
+expected reduction in pick-error from one more visit, i.e. the M3
+VOI-KG shape contested_j x DeltaVar_j, with DeltaVar supplied
+honestly by the resolution kernel (a visit into a dwelling subtree
+reduces nothing — accQ grows like n^2 — while a visit into a
+resolving line genuinely sharpens; 2d-b refuted the 1/n variance
+currency, and the kernel is what replaces it). This is the
+convergence point: the D currency returns with honest pricing, and
+boundary arms on BOTH sides get measured because reducing decision
+risk requires it. The marginal-value form (how a new eval enters
+accN/accS/accQ in expectation, resolution probability from the tip
+stErr) is the derivation deliverable of that registration.
