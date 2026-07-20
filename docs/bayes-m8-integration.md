@@ -1819,3 +1819,18 @@ resolve that) or this is band-edge noise. Per the registered rule
 the one-look confirmation at 600 distinct is IN FLIGHT
 (match-m8-2dm-B1024-confirm, n = 700 raw); the standing number is
 whatever the confirmation says.
+
+## 2d-m outcome (2026-07-20, append-only) — PARITY HOLDS AT B = 1024
+
+Confirmation: n = 700 raw, 563 distinct (80% — slightly under the
+600 target, noted), W31 / L70 / D462, **deduped -24 +/- 6. This is
+the standing number.** P-2dm1 PASS (inside [-40, +40]); P-2dm2 PASS
+(-24 vs bar -38). The first look's -40 was band-edge noise. The
+kernel chooser stack with ONE global z* = 0.50 — no budget-indexed
+constant anywhere — plays within the parity band from B = 8 to
+B = 1024, with the same weak high-budget drift (~-20) the retired
+stack showed. Draw rate 82% at B = 1024. The corrected campaign
+statement extends: contrast-space CBTS (chooser on PUCT allocation)
+= parity with fully-tuned stock PUCT across two orders of magnitude
+of search budget, under a budget-general noise model whose every
+constant is label-derived.
