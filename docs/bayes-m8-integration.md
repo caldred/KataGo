@@ -1109,3 +1109,67 @@ least-biased, not bias-free). Next, each own registration: (ii-fit)
 fit AR-family + floor to T-ref, re-derive contrast noise + currency
 constants; desktop cross-check on the original audit dumps when
 available; more positions if the family fit is CI-limited.
+
+## 2d-h registration (kernel fit + derived constants; 2026-07-20,
+## appended before any run) — step (ii) of the 2d-e sequence
+
+Fit generative kernel families to the 2d-fg-local measurement, at the
+PAIR level (class tables mix distances; the fit consumes mixed-referee
+pair products directly, plus same-node cross-referee products as the
+d=0 diagonal). Families, per the theory doc §3 with the 2d-fg-local
+verdict (sib ~ pc^2 => family (c) degenerates into (b)):
+
+  (b)       corr(d) = phi^d                       1 param + sigma^2
+  (b+floor) corr(d) = (1-c)*phi^d + c             2 params + sigma^2
+            (motivated by the distance table flattening at ~0.3)
+
+Fit: least squares over pair products, sigma^2 analytic given shape
+params; family choice by held-out even/odd game split (fit even,
+predictive SSE on odd, both directions); cluster bootstrap over games
+for CIs on (phi, c). Derived constants, printed from the winning fit
+(theory doc §5 formulas): within-subtree mean pairwise correlation
+rho_bar_w and n_eff law; resolution floor sigma*sqrt(rho_bar_inf);
+cross-arm rho_bar_x and the contrast floor 2*sigma^2*(rho_bar_w -
+rho_bar_x); the engine phi for the belief-state v2 port.
+
+Registered predictions:
+- **P-fit1**: (b+floor) beats (b) on held-out SSE in BOTH split
+  directions (the floor is real, not noise).
+- **P-fit2**: phi-hat in [0.6, 0.85] with cluster-CI half-width <=
+  0.15 — precision adequate to set constants; if wider, the verdict
+  is "more positions", recorded, and no constants ship.
+- **P-fit3** (cross-estimator consistency, enabled by the P-2dg2
+  refutation): the fitted kernel's predicted class table correlates
+  > 0.8 with the SAME-NET clean table's entries (retention ~ 0 makes
+  T-same an independent check of shape).
+
+## 2d-h outcome (2026-07-20, append-only) — floor CONFIRMED, but
+## under-identified at n=60: no constants ship; more-positions rule
+## fires
+
+Fit on 1507 pair products (bmcts scripts/m8_kernel_fit.py,
+results/kernel-fit-2dh.json):
+
+- **P-fit1 CONFIRMED**: (b+floor) beats pure AR on held-out SSE in
+  both split directions. The persistent component is real — the
+  kernel is AR-decay-to-floor, not pure AR.
+- **P-fit2 REFUTED -> more positions**: phi = 0.405 [0.30, 0.665]
+  (half-width 0.183 > 0.15), c = 0.44 [0.16, 0.50 = grid cap,
+  upper edge censored]. phi and c trade off strongly at this n; the
+  decomposition (fast decay + big floor vs slow decay + small floor)
+  is not identified. Per the registered rule, the derived constants
+  are ILLUSTRATIVE ONLY and none ship.
+- **P-fit3 REFUTED**: predicted-vs-T-same class shape r = 0.68. The
+  distance-only kernel with the T-ref-fitted floor over-predicts the
+  same-net cousin entries (0.45 vs measured 0.31-0.33) — the same
+  cross-estimator cousin disagreement flagged in the 2d-fg-local
+  outcome, now quantified. Either the cousin structure needs an
+  LCA-depth term (nested, not distance-only) or one estimator's
+  cousin entries are contaminated; n=60 cannot say which.
+
+Action (within this registration's fallback): extend the position set
+to 180 games (same source, same seeded protocol, first 60 unchanged;
+pipeline resumes, only new positions processed) and re-run the fit.
+Target unchanged: P-fit2's CI criterion. No new predictions; P-fit3
+re-scored on the larger n decides the distance-only vs LCA-term
+question at the NEXT registration if it persists.
